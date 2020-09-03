@@ -309,14 +309,14 @@ def _BondByDummies(mol, idx1, idx2):
     return mol
 
 
-def _SubsFromSmiles(Rs_smiles):
+def _SubsFromSmiles(RsSmiles):
     '''
     Transforms SMILES of substituents to RDKit Mol objects and checks them
-    Rs_smiles is dictionary, keys are 'R1', 'R2', etc, and values are
+    RsSmiles is dictionary, keys are 'R1', 'R2', etc, and values are
     substituents SMILES
     '''
     Rs = {}
-    for name, smiles in Rs_smiles.items():
+    for name, smiles in RsSmiles.items():
         if name[0] != 'R' or not name[1:].isdigit():
             raise ValueError(f'Bad substituent\'s name: {name}')
         mol = MolFromSmiles(smiles)
@@ -333,12 +333,12 @@ def _SubsFromSmiles(Rs_smiles):
     return Rs
 
 
-def AddSubsToMol(mol, Rs):
+def AddSubsToMol(mol, RsSmiles):
     '''
     Updates molecule by adding substituents
     '''
     # prepare Rs
-    Rs = _SubsFromSmiles(Rs)
+    Rs = _SubsFromSmiles(RsSmiles)
     # get number and type of Rs
     needed_Rs = []
     for atom in mol.GetAtoms():
@@ -1011,7 +1011,7 @@ class Complex():
     # Stereomers search #
     #####################
     
-    def _FindNeighboringDAs(self, min_trans_cycle = None):
+    def _FindNeighboringDAs(self, minTransCycle = None):
         '''
         Finds restrictions of multidentate ligands.
         Returns pairs of DAs which must be near each over
@@ -1024,7 +1024,7 @@ class Complex():
         # find restrictions
         restrictions = []
         for r in rings:
-            if min_trans_cycle and len(r) >= min_trans_cycle:
+            if minTransCycle and len(r) >= minTransCycle:
                 continue
             r = [idx for idx in r if idx in DAs]
             if len(r) == 2:
@@ -1033,7 +1033,7 @@ class Complex():
         return restrictions
     
     
-    def GetStereomers(self, regime = 'all', drop_enantiomers = True, min_trans_cycle = None):
+    def GetStereomers(self, regime = 'all', dropEnantiomers = True, minTransCycle = None):
         '''
         Generates all possible stereomers of a complex.
         Saves stereochemistry of existing centers.
@@ -1085,7 +1085,7 @@ class Complex():
                 stereomers.append( Complex(Chem.MolToSmiles(m), self._geom) )
             return stereomers
         # find restrictions on DA positions
-        pairs = self._FindNeighboringDAs(min_trans_cycle)
+        pairs = self._FindNeighboringDAs(minTransCycle)
         # generate all possible CA orientations
         stereomers = []
         for m in mols:
@@ -1127,7 +1127,7 @@ class Complex():
             for j in range(i+1, len(stereomers)):
                 if stereomers[i].IsEqual(stereomers[j]):
                     drop.append(j)
-                elif drop_enantiomers and stereomers[i].IsEnantiomer(stereomers[j]):
+                elif dropEnantiomers and stereomers[i].IsEnantiomer(stereomers[j]):
                     drop.append(j)
         stereomers = [compl for i, compl in enumerate(stereomers) if i not in drop]
         
@@ -1279,11 +1279,11 @@ class Complex():
                         self._ff.UFFAddAngleConstraint(*constraint)
     
     
-    def _SetForceField(self, idx_conf):
+    def _SetForceField(self, confId):
         '''
         Sets force field for the geometry optimization
         '''
-        self._ff = AllChem.UFFGetMoleculeForceField(self.mol3Dx, confId = idx_conf)
+        self._ff = AllChem.UFFGetMoleculeForceField(self.mol3Dx, confId = confId)
         if self._ff_prepared:
             # restore them from saved params
             for constraint in self._angle_params:
@@ -1347,25 +1347,25 @@ class Complex():
         return flag
     
     
-    def AddConformer(self, clear_confs = True, max_attempts = 10):
+    def AddConformer(self, clearConfs = True, maxAttempts = 10):
         '''
         Generates complex conformer using constrained embedding
         '''
         if self._PrintErrorInit():
             return None
         flag = -1
-        attempt = max_attempts
+        attempt = maxAttempts
         while flag == -1 and attempt > 0:
             attempt -= 1
             # embedding
             if not self._embedding_prepared:
                 self._SetEmbedding()
             flag = AllChem.EmbedMolecule(self.mol3Dx, coordMap = self._coordMap,
-                                         clearConfs = clear_confs,
+                                         clearConfs = clearConfs,
                                          enforceChirality = True)
             if flag == -1:
                 continue
-            # optimization # HINT: do not use self.Optimize as we need to apply self._ChechStereoCA after
+            # optimization # HINT: do not use self.Optimize as we need to apply self._CheckStereoCA after
             self._SetForceField(flag)
             self._ff.Initialize()
             self._ff.Minimize(maxIts = 1000)
@@ -1375,7 +1375,7 @@ class Complex():
                 flag = -1
                 continue
             # refresh other confs
-            if clear_confs:
+            if clearConfs:
                 self.mol.RemoveAllConformers()
                 self.mol3D.RemoveAllConformers()
             # move CA to (0,0,0)
@@ -1410,7 +1410,7 @@ class Complex():
     
     
     def AddConstrainedConformer(self, core, confId = 0, ignoreHs = True,
-                                      clear_confs = True, max_attempts = 10):
+                                      clearConfs = True, maxAttempts = 10):
         '''
         Constrained embedding using other complex geometry
         Core complex must be a substructure of complex and
@@ -1483,11 +1483,11 @@ class Complex():
                 coordMap[idx] = dummy.GetConformer().GetAtomPosition(dummyMap[idx])
         # embedding
         flag = -1
-        attempt = max_attempts
+        attempt = maxAttempts
         while flag == -1 and attempt > 0:
             attempt -= 1
             flag = AllChem.EmbedMolecule(self.mol3Dx, coordMap = coordMap,
-                                         clearConfs = clear_confs,
+                                         clearConfs = clearConfs,
                                          enforceChirality = True)
             if flag == -1:
                 continue
@@ -1512,7 +1512,7 @@ class Complex():
                 flag = -1
                 continue
             # refresh other confs
-            if clear_confs:
+            if clearConfs:
                 self.mol.RemoveAllConformers()
                 self.mol3D.RemoveAllConformers()
             # energy
@@ -1540,16 +1540,16 @@ class Complex():
         return flag
     
     
-    def AddConstrainedConformerFromXYZ(self, path_core, ignoreHs = True,
-                                             clear_confs = True, max_attempts = 10):
+    def AddConstrainedConformerFromXYZ(self, pathCore, ignoreHs = True,
+                                             clearConfs = True, maxAttempts = 10):
         '''
         Constrained embedding of the complex using geometry stored to XYZ file
         Central atom and donor atoms must be in complete accord
         '''
-        core = ComplexFromXYZFile(path_core)
+        core = ComplexFromXYZFile(pathCore)
         
         return self.AddConstrainedConformer(core, confId = 0, ignoreHs = ignoreHs,
-                                            clear_confs = clear_confs, max_attempts = max_attempts)
+                                            clearConfs = clearConfs, maxAttempts = maxAttempts)
     
     
     def GetNumConformers(self):
@@ -1560,13 +1560,13 @@ class Complex():
         return self.mol.GetNumConformers()
     
     
-    def RemoveConformer(self, conf_id):
+    def RemoveConformer(self, confId):
         '''
         Removes conformer with given idx
         '''
-        self.mol.RemoveConformer(conf_id)
-        self.mol3D.RemoveConformer(conf_id)
-        self.mol3Dx.RemoveConformer(conf_id)
+        self.mol.RemoveConformer(confId)
+        self.mol3D.RemoveConformer(confId)
+        self.mol3Dx.RemoveConformer(confId)
     
     
     def RemoveAllConformers(self):
@@ -1578,7 +1578,7 @@ class Complex():
         self.mol3Dx.RemoveAllConformers()
     
     
-    def AddConformers(self, n = 10, clear_confs = True, max_attempts = 10, rms_thresh = -1):
+    def AddConformers(self, numConfs = 10, clearConfs = True, maxAttempts = 10, rmsThresh = -1):
         '''
         Generates several conformers
         '''
@@ -1586,14 +1586,14 @@ class Complex():
             return None
         # generate 3D
         flags = []
-        for i in range(n):
-            clear_confs_iter = False if flags else clear_confs
-            flag = self.AddConformer(clear_confs = clear_confs_iter,
-                                     max_attempts = max_attempts)
+        for i in range(numConfs):
+            clearConfsIter = False if flags else clearConfs
+            flag = self.AddConformer(clearConfs = clearConfsIter,
+                                     maxAttempts = maxAttempts)
             # check flag and rms
             if flag == -1:
                 continue
-            if rms_thresh == -1:
+            if rmsThresh == -1:
                 flags.append(flag)
                 continue
             # check rms with previous conformers
@@ -1601,7 +1601,7 @@ class Complex():
             for cid in flags:
                 rms = AllChem.GetConformerRMS(self.mol3D, cid, flag)
                 #print(rms)
-                if rms < rms_thresh:
+                if rms < rmsThresh:
                     remove_conf = True
                     break
             if remove_conf:
@@ -1612,8 +1612,8 @@ class Complex():
         return flags
     
     
-    def AddConstrainedConformers(self, core, confId = 0, ignoreHs = True, n = 10,
-                                 clear_confs = True, max_attempts = 10, rms_thresh = -1):
+    def AddConstrainedConformers(self, core, confId = 0, ignoreHs = True, numConfs = 10,
+                                 clearConfs = True, maxAttempts = 10, rmsThresh = -1):
         '''
         Generates several conformers
         '''
@@ -1621,15 +1621,15 @@ class Complex():
             return None
         # generate 3D
         flags = []
-        for i in range(n):
-            clear_confs_iter = False if flags else clear_confs
+        for i in range(numConfs):
+            clearConfsIter = False if flags else clearConfs
             flag = self.AddConstrainedConformer(core, confId = confId, ignoreHs = ignoreHs,
-                                                clear_confs = clear_confs_iter,
-                                                max_attempts = max_attempts)
+                                                clearConfs = clearConfsIter,
+                                                maxAttempts = maxAttempts)
             # check flag and rms
             if flag == -1:
                 continue
-            if rms_thresh == -1:
+            if rmsThresh == -1:
                 flags.append(flag)
                 continue
             # check rms with previous conformers
@@ -1637,7 +1637,7 @@ class Complex():
             for cid in flags:
                 rms = AllChem.GetConformerRMS(self.mol3D, cid, flag)
                 #print(rms)
-                if rms < rms_thresh:
+                if rms < rmsThresh:
                     remove_conf = True
                     break
             if remove_conf:
@@ -1648,25 +1648,25 @@ class Complex():
         return flags
     
     
-    def AddConstrainedConformersFromXYZ(self, path_core, ignoreHs = True, n = 10,
-                                        clear_confs = True, max_attempts = 10, rms_thresh = -1):
+    def AddConstrainedConformersFromXYZ(self, pathCore, ignoreHs = True, numConfs = 10,
+                                        clearConfs = True, maxAttempts = 10, rmsThresh = -1):
         '''
         Generates several conformers
         '''
         if self._PrintErrorInit():
             return None
-        core = ComplexFromXYZFile(path_core)
+        core = ComplexFromXYZFile(pathCore)
         # generate 3D
         flags = []
-        for i in range(n):
-            clear_confs_iter = False if flags else clear_confs
+        for i in range(numConfs):
+            clearConfsIter = False if flags else clearConfs
             flag = self.AddConstrainedConformer(core, confId = 0, ignoreHs = ignoreHs,
-                                                clear_confs = clear_confs_iter,
-                                                max_attempts = max_attempts)
+                                                clearConfs = clearConfsIter,
+                                                maxAttempts = maxAttempts)
             # check flag and rms
             if flag == -1:
                 continue
-            if rms_thresh == -1:
+            if rmsThresh == -1:
                 flags.append(flag)
                 continue
             # check rms with previous conformers
@@ -1674,7 +1674,7 @@ class Complex():
             for cid in flags:
                 rms = AllChem.GetConformerRMS(self.mol3D, cid, flag)
                 #print(rms)
-                if rms < rms_thresh:
+                if rms < rmsThresh:
                     remove_conf = True
                     break
             if remove_conf:
@@ -1731,13 +1731,13 @@ class Complex():
     # Output #
     ##########
     
-    def _ConfToXYZ(self, conf_id):
+    def _ConfToXYZ(self, confId):
         '''
         Generates text of XYZ file of conformer
         '''
         # coordinates
         xyz = []
-        conf = self.mol3Dx.GetConformer(conf_id) # not mol3D as it uses in AlignMol
+        conf = self.mol3Dx.GetConformer(confId) # not mol3D as it uses in AlignMol
         for atom in self.mol3D.GetAtoms():
             symbol = atom.GetSymbol()
             if symbol == '*':
@@ -1763,16 +1763,16 @@ class Complex():
         for atom in mol3Dx.GetAtoms():
             atom.SetAtomMapNum(atom.GetIdx())
         smiles3Dx = Chem.MolToSmiles(mol3Dx, canonical = False)
-        # TODO: dummies' coords
+        # dummies' coords
         dummies = []
-        conf3Dx = mol3Dx.GetConformer(conf_id)
+        conf3Dx = mol3Dx.GetConformer(confId)
         for i in range(mol3D.GetNumAtoms(), mol3Dx.GetNumAtoms()):
             if i < mol3D.GetNumAtoms():
                 continue
             p = conf3Dx.GetAtomPosition(i)
             dummies += [p.x, p.y, p.z]
         # make text
-        info = {'conf': conf_id, 'E': float(f'{E:.2f}'), 'rms': float(f'{rms:.4f}'),
+        info = {'conf': confId, 'E': float(f'{E:.2f}'), 'rms': float(f'{rms:.4f}'),
                 'geom': self._geom, 'smiles': smiles, 'smiles3D': smiles3D,
                 'smiles3Dx': smiles3Dx, 'dummies': dummies}
         text = [str(len(xyz)), json.dumps(info)] + xyz
@@ -1780,11 +1780,11 @@ class Complex():
         return '\n'.join(text)+'\n'
     
     
-    def ToXYZBlock(self, conf_id = -2):
+    def ToXYZBlock(self, confId = -2):
         '''
         Returns XYZ as text block
-        if conf_id = -1, conformer with the lowest energy will be saved
-        if conf_id = -2, all conformers will be saved
+        if confId = -1, conformer with the lowest energy will be saved
+        if confId = -2, all conformers will be saved
         '''
         if self._PrintErrorInit():
             return None
@@ -1792,9 +1792,9 @@ class Complex():
         if not N:
             raise ValueError('Bad conformer ID: complex has no conformers')
         # prepare conf idxs
-        if conf_id == -2:
+        if confId == -2:
             conf_idxs = list(range(N))
-        elif conf_id == -1:
+        elif confId == -1:
             minE, minI = float('inf'), None
             for i in range(N):
                 E = self.mol3D.GetConformer(i).GetDoubleProp('E')
@@ -1803,7 +1803,7 @@ class Complex():
                     minI = i
             conf_idxs = [minI]
         else:
-            conf_idxs = [conf_id]
+            conf_idxs = [confId]
         text = ''
         for conf_id in conf_idxs:
             text += self._ConfToXYZ(conf_id)
@@ -1811,13 +1811,13 @@ class Complex():
         return text
     
     
-    def ToXYZ(self, path, conf_id = -2):
+    def ToXYZ(self, path, confId = -2):
         '''
         Saves found conformers in XYZ format
-        if conf_id = -1, conformer with the lowest energy will be saved
-        if conf_id = -2, all conformers will be saved
+        if confId = -1, conformer with the lowest energy will be saved
+        if confId = -2, all conformers will be saved
         '''
-        text = self.ToXYZBlock(conf_id)
+        text = self.ToXYZBlock(confId)
         with open(path, 'w') as outf:
             outf.write(text)
 

@@ -50,7 +50,17 @@ def ParseInput(path):
     return info
 
 
-
+def ReadInput(path):
+    '''
+    Extracts work parameters from the input file
+    '''
+    info = ParseInput(path)
+    
+    
+    
+    params = {}
+    
+    return params
 
 
 #%% 
