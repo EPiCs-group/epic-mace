@@ -2,11 +2,14 @@
 Tests MACE code
 '''
 
-from mace import *
-import re
+import re, sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import mace
+
 from rdkit import Chem
 
-#%% Helpers
+
+#%% Support functions
 
 def MolToMolFile(mol, path = 'C:/Users/ivan-/Desktop/x.mol', confId = 0):
     '''
@@ -19,14 +22,18 @@ def MolToMolFile(mol, path = 'C:/Users/ivan-/Desktop/x.mol', confId = 0):
 
 
 
-#%% Stereo tests
+#%% Geometry tests
+
+# 1
 
 
+# 2
 
 
+# 3
 
 
-
+# 4
 
 
 
@@ -51,7 +58,7 @@ CA = '[*+2]'
 geom = 'OH'
 regime = 'all'
 drop_enantiomers = True
-X = ComplexFromLigands(ligands, CA, geom)
+X = mace.ComplexFromLigands(ligands, CA, geom)
 Xs = X.GetStereomers(regime = regime, drop_enantiomers = drop_enantiomers)
 print(len(Xs))
 

@@ -6,8 +6,9 @@ geometries
 
 #%% Must DOs:
 
+# TODO: change parameters naming to camelCase
 # TODO: add charge to properties
-# TODO: dummy as CA - substitute for any atom before embedding
+# TODO: AddBondedLigand: add stereo_dummy flag
 # TODO: error texts
 # TODO: functions and module descriptions
 # TODO: full testing
@@ -17,6 +18,7 @@ geometries
 #%% Optional improvements
 
 # TODO: Na, Ca, Al, etc as CA - fix RDKit problem with dative bonds
+# TODO: dummy as CA - substitute for any atom before embedding
 # TODO: MolFromCXSmiles: @/@@ support - achiral/chiral ligands (do we need it?)
 # TODO: enantiomers: set of unique structures must have same stereo for CA
 # TODO: GetEnantiomer() method
@@ -396,6 +398,99 @@ def ComplexFromMol(mol, geom):
     return X
 
 
+def ComplexFromLigands(ligands, CA, geom):
+    '''
+    Input:
+      * ligands: the list of ligands' SMILES. Donor atoms are those ones
+                 which have atom mapping
+      * CA: the SMILES of central atom
+    Output:
+      * Complex object
+    '''
+    # combine ligands
+    ligands = [MolFromSmiles(_) for _ in ligands]
+    mol = ligands[0]
+    for ligand in ligands[1:]:
+        mol = Chem.CombineMols(mol, ligand)
+    # Add Hs for easy stereo control
+    mol = Chem.AddHs(mol)
+    Chem.SetBondStereoFromDirections(mol)
+    # add CA to Mol object
+    CA = Chem.MolFromSmiles(CA)
+    if not CA:
+        raise ValueError('Error in SMILES of central atom')
+    if CA.GetNumAtoms() != 1:
+        raise ValueError('CA must be SMILES of one atom')
+    CA = CA.GetAtomWithIdx(0)
+    ed = Chem.EditableMol(mol)
+    idx_CA = ed.AddAtom(CA)
+    mol = ed.GetMol()
+    # find dummies and make flips if needed
+    DAs = [atom for atom in mol.GetAtoms() if atom.GetIsotope()]
+    CHIs = [Chem.ChiralType.CHI_TETRAHEDRAL_CCW, Chem.ChiralType.CHI_TETRAHEDRAL_CW]
+    CTs = [Chem.rdchem.BondStereo.STEREOCIS, Chem.rdchem.BondStereo.STEREOTRANS]
+    dummies = {}
+    doubles = []
+    for DA in DAs:
+        idx_DA = DA.GetIdx()
+        # is dummy bonded
+        idx_dummy = None
+        for i, b in enumerate(DA.GetBonds()):
+            atom = b.GetOtherAtom(DA)
+            if atom.GetSymbol() == '*' and len(atom.GetNeighbors()) == 1:
+                idx_dummy = atom.GetIdx()
+                break
+        if idx_dummy is None:
+            continue
+        dummies[idx_DA] = idx_dummy
+        # chirality
+        if DA.GetChiralTag() in CHIs:
+            if (len(DA.GetNeighbors()) == 4 and not i % 2) or \
+               (len(DA.GetNeighbors()) == 3 and i % 2):
+                DA.SetChiralTag(CHIs[not CHIs.index(DA.GetChiralTag())])
+        # double bonds
+        bs = [b for b in DA.GetBonds() if b.GetOtherAtomIdx(idx_DA) != idx_dummy]
+        for b in bs:
+            if b.GetStereo() not in CTs:
+                continue
+            idx1, idx2 = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
+            i1, i2 = b.GetStereoAtoms()
+            if idx_dummy not in (i1, i2):
+                continue
+            if idx1 == idx_DA:
+                doubles.append( (idx1, idx2, idx_CA, i2, b.GetStereo()) )
+            else:
+                doubles.append( (idx1, idx2, i1, idx_CA, b.GetStereo()) )
+    # create dative bonds and remove bonds with dummies
+    ed = Chem.EditableMol(mol)
+    for DA in DAs:
+        idx_DA = DA.GetIdx()
+        if idx_DA in dummies:
+            ed.RemoveBond(idx_DA, dummies[idx_DA])
+        ed.AddBond(DA.GetIdx(), idx_CA, Chem.BondType.DATIVE)
+    # reset double bonds stereo
+    if doubles:
+        mol = ed.GetMol()
+        for a1_idx, a2_idx, i, j, bs in doubles:
+            bond = mol.GetBondBetweenAtoms(a1_idx, a2_idx)
+            bond.SetStereoAtoms(i, j)
+            bond.SetStereo(bs)
+        Chem.SanitizeMol(mol)
+        ed = Chem.EditableMol(mol)
+    # remove dummies
+    for idx in sorted(dummies.values(), reverse = True):
+        ed.RemoveAtom(idx)
+    # final setting
+    mol = ed.GetMol()
+    Chem.SanitizeMol(mol)
+    mol = Chem.RemoveHs(mol)
+    
+    return ComplexFromMol(mol, geom)
+
+
+
+#%% Read from file
+
 def _ReadXYZ(path):
     '''
     Reads XYZ file of Complex and returns imitation of Complex object
@@ -530,7 +625,7 @@ def _ReadXYZ(path):
     return mol, mol3D, mol3Dx, infos
 
 
-def ComplexFromXYZ(path):
+def ComplexFromXYZFile(path):
     '''
     Reads XYZ file of Complex and returns imitation of Complex object
     '''
@@ -583,96 +678,6 @@ def ComplexFromXYZ(path):
     return X
 
 
-def ComplexFromLigands(ligands, CA, geom):
-    '''
-    Input:
-      * ligands: the list of ligands' SMILES. Donor atoms are those ones
-                 which have atom mapping
-      * CA: the SMILES of central atom
-    Output:
-      * Complex object
-    '''
-    # combine ligands
-    ligands = [MolFromSmiles(_) for _ in ligands]
-    mol = ligands[0]
-    for ligand in ligands[1:]:
-        mol = Chem.CombineMols(mol, ligand)
-    # Add Hs for easy stereo control
-    mol = Chem.AddHs(mol)
-    Chem.SetBondStereoFromDirections(mol)
-    # add CA to Mol object
-    CA = Chem.MolFromSmiles(CA)
-    if not CA:
-        raise ValueError('Error in SMILES of central atom')
-    if CA.GetNumAtoms() != 1:
-        raise ValueError('CA must be SMILES of one atom')
-    CA = CA.GetAtomWithIdx(0)
-    ed = Chem.EditableMol(mol)
-    idx_CA = ed.AddAtom(CA)
-    mol = ed.GetMol()
-    # find dummies and make flips if needed
-    DAs = [atom for atom in mol.GetAtoms() if atom.GetIsotope()]
-    CHIs = [Chem.ChiralType.CHI_TETRAHEDRAL_CCW, Chem.ChiralType.CHI_TETRAHEDRAL_CW]
-    CTs = [Chem.rdchem.BondStereo.STEREOCIS, Chem.rdchem.BondStereo.STEREOTRANS]
-    dummies = {}
-    doubles = []
-    for DA in DAs:
-        idx_DA = DA.GetIdx()
-        # is dummy bonded
-        idx_dummy = None
-        for i, b in enumerate(DA.GetBonds()):
-            atom = b.GetOtherAtom(DA)
-            if atom.GetSymbol() == '*' and len(atom.GetNeighbors()) == 1:
-                idx_dummy = atom.GetIdx()
-                break
-        if idx_dummy is None:
-            continue
-        dummies[idx_DA] = idx_dummy
-        # chirality
-        if DA.GetChiralTag() in CHIs:
-            if (len(DA.GetNeighbors()) == 4 and not i % 2) or \
-               (len(DA.GetNeighbors()) == 3 and i % 2):
-                DA.SetChiralTag(CHIs[not CHIs.index(DA.GetChiralTag())])
-        # double bonds
-        bs = [b for b in DA.GetBonds() if b.GetOtherAtomIdx(idx_DA) != idx_dummy]
-        for b in bs:
-            if b.GetStereo() not in CTs:
-                continue
-            idx1, idx2 = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
-            i1, i2 = b.GetStereoAtoms()
-            if idx_dummy not in (i1, i2):
-                continue
-            if idx1 == idx_DA:
-                doubles.append( (idx1, idx2, idx_CA, i2, b.GetStereo()) )
-            else:
-                doubles.append( (idx1, idx2, i1, idx_CA, b.GetStereo()) )
-    # create dative bonds and remove bonds with dummies
-    ed = Chem.EditableMol(mol)
-    for DA in DAs:
-        idx_DA = DA.GetIdx()
-        if idx_DA in dummies:
-            ed.RemoveBond(idx_DA, dummies[idx_DA])
-        ed.AddBond(DA.GetIdx(), idx_CA, Chem.BondType.DATIVE)
-    # reset double bonds stereo
-    if doubles:
-        mol = ed.GetMol()
-        for a1_idx, a2_idx, i, j, bs in doubles:
-            bond = mol.GetBondBetweenAtoms(a1_idx, a2_idx)
-            bond.SetStereoAtoms(i, j)
-            bond.SetStereo(bs)
-        Chem.SanitizeMol(mol)
-        ed = Chem.EditableMol(mol)
-    # remove dummies
-    for idx in sorted(dummies.values(), reverse = True):
-        ed.RemoveAtom(idx)
-    # final setting
-    mol = ed.GetMol()
-    Chem.SanitizeMol(mol)
-    mol = Chem.RemoveHs(mol)
-    
-    return ComplexFromMol(mol, geom)
-
-
 
 #%% Support functions
 
@@ -687,99 +692,6 @@ def _CalcTHVolume(conf, idxs):
     prod = [v1[1]*v2[2]-v1[2]*v2[1], v1[2]*v2[0]-v1[0]*v2[2], v1[0]*v2[1]-v1[1]*v2[0]]
     
     return sum([x*y for x, y in zip(prod, v3)])/6
-
-
-def ReadXYZ(path):
-    '''
-    Reads XYZ file of Complex and returns imitation of Complex object
-    '''
-    # read file
-    if not os.path.isfile(path):
-        raise ValueError('Bad XYZ path: file does not exist')
-    with open(path, 'r') as inpf:
-        text = [_.strip() for _ in inpf.readlines()]
-    # parse info
-    if not text[0].isdigit():
-        raise ValueError('Bad XYZ file: the first line must contain the number of atoms')
-    N = int(text[0])
-    try:
-        info = json.loads(text[1])
-    except (KeyboardInterrupt, SystemExit):
-        raise
-    except:
-        raise ValueError('Bad XYZ file: second line must be a JSON')
-    if 'geom' not in info:
-        raise ValueError('Bad XYZ file: second line must contain geometry of the central atom')
-    if 'smiles' not in info or 'smiles3D' not in info:
-        raise ValueError('Bad XYZ file: second line must contain SMILES strings of complex')
-    # parse coordinates
-    if len(text) < N + 2:
-        raise ValueError('Bad XYZ file: number of atoms in the coordinates block is less than specified in the first line')
-    try:
-        atoms = [_.split()[0] for _ in text[2:2+N]]
-        coords = [Point3D(*[float(_) for _ in line.split()[1:4]]) for line in text[2:2+N]]
-    except (KeyboardInterrupt, SystemExit):
-        raise
-    except:
-        raise ValueError('Bad XYZ file: cannot read coordinates block')
-    # check molecules
-    ps = Chem.SmilesParserParams()
-    ps.removeHs = False
-    mol = Chem.MolFromSmiles(info['smiles'], params = ps)
-    mol3D = Chem.MolFromSmiles(info['smiles3D'], params = ps)
-    if not mol or not mol3D:
-        raise ValueError('Bad XYZ file: not readable SMILES')
-    if mol3D.GetNumAtoms() != N:
-        raise ValueError('Bad XYZ file: number of atoms in molecule and coordinates block do not match')
-    # check mappings
-    maps = []
-    for atom in mol.GetAtoms():
-        maps.append(atom.GetAtomMapNum())
-        atom.SetAtomMapNum(0)
-    mol = Chem.RenumberAtoms(mol, tuple(zip(*sorted([(j, i) for i, j in enumerate(maps)])))[1])
-    flag = False
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() != atoms[atom.GetIdx()]:
-            flag = True
-            break
-    if flag:
-        raise ValueError('Bad XYZ file: atom numbering in SMILES and coordinates block do not match')
-    maps3D = []
-    for atom in mol3D.GetAtoms():
-        maps3D.append(atom.GetAtomMapNum())
-        atom.SetAtomMapNum(0)
-    mol3D = Chem.RenumberAtoms(mol3D, tuple(zip(*sorted([(j, i) for i, j in enumerate(maps3D)])))[1])
-    flag = False
-    for atom in mol3D.GetAtoms():
-        if atom.GetSymbol() != atoms[atom.GetIdx()]:
-            flag = True
-            break
-    if flag:
-        raise ValueError('Bad XYZ file: atom numbering in SMILES and coordinates block do not match')
-    if Chem.MolToSmiles(mol, canonical = False) != Chem.MolToSmiles(Chem.RemoveHs(mol3D), canonical = False):
-        raise ValueError('Bad XYZ file: SMILES and SMILES3D do not match')
-    # make Complex
-    try:
-        X = ComplexFromMol(mol, info['geom'])
-    except ValueError as e:
-        raise ValueError('Bad XYZ file: unsuccessful SMILES to Complex conversion: ' + e.args[0])
-    except (KeyboardInterrupt, SystemExit):
-        raise
-    except:
-        raise ValueError('Bad XYZ file: unknown error during SMILES to Complex conversion')
-    # add coords to mol
-    conf = AllChem.Conformer()
-    for atom in mol.GetAtoms():
-        conf.SetAtomPosition(atom.GetIdx(), coords[atom.GetIdx()])
-    X.mol.AddConformer(conf, assignId = True)
-    # add mol3D and its coords
-    conf = AllChem.Conformer()
-    for atom in mol3D.GetAtoms():
-        conf.SetAtomPosition(atom.GetIdx(), coords[atom.GetIdx()])
-    mol3D.AddConformer(conf, assignId = True)
-    X.mol3D = mol3D
-    
-    return X
 
 
 
@@ -1634,7 +1546,7 @@ class Complex():
         Constrained embedding of the complex using geometry stored to XYZ file
         Central atom and donor atoms must be in complete accord
         '''
-        core = ReadXYZ(path_core)
+        core = ComplexFromXYZFile(path_core)
         
         return self.AddConstrainedConformer(core, confId = 0, ignoreHs = ignoreHs,
                                             clear_confs = clear_confs, max_attempts = max_attempts)
@@ -1743,7 +1655,7 @@ class Complex():
         '''
         if self._PrintErrorInit():
             return None
-        core = ReadXYZ(path_core)
+        core = ComplexFromXYZFile(path_core)
         # generate 3D
         flags = []
         for i in range(n):
