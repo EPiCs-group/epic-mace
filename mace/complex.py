@@ -326,7 +326,9 @@ def _SubsFromSmiles(RsSmiles):
         if len(dummies) != 1:
             raise ValueError(f'Bad {name} substituent\'s SMILES: {smiles}\n Substituent must contain exactly one dummy atom')
         if len(dummies[0].GetNeighbors()) != 1:
-            raise ValueError(f'Bad {name} substituent\'s SMILES: {smiles}\n Substituent\'s dummy must be bonded to exactly one atom')
+            raise ValueError(f'Bad {name} substituent\'s SMILES: {smiles}\n Substituent\'s dummy must be bonded to exactly one atom by single bond')
+        if str(dummies[0].GetBonds()[0].GetBondType()) != 'SINGLE':
+            raise ValueError(f'Bad {name} substituent\'s SMILES: {smiles}\n Substituent\'s dummy must be bonded to exactly one atom by single bond')
         dummies[0].SetIsotope(int(name[1:]))
         Rs[name] = mol
     
