@@ -57,14 +57,14 @@ ligands = ['c1ccccc1[C-:4]=CC=[C-:5]c1ccccc1', '[O+]#[C-:1]', '[O+]#[C-:2]', '[O
 CA = '[*+2]'
 geom = 'OH'
 regime = 'all'
-drop_enantiomers = True
+dropEnantiomers = True
 X = mace.ComplexFromLigands(ligands, CA, geom)
-Xs = X.GetStereomers(regime = regime, drop_enantiomers = drop_enantiomers)
+Xs = X.GetStereomers(regime = regime, dropEnantiomers = dropEnantiomers)
 print(len(Xs))
 
 # # 3D
 # for i, x in enumerate(Xs):
-#     x.AddConformers(n = 3, rms_thresh = 2.0)
+#     x.AddConformers(n = 3, rmsThresh = 2.0)
 #     x.ToXYZ(f'C:/Users/ivan-/Desktop/x_{i}.xyz', -2)
 
 # # mol3Dx coords
@@ -90,7 +90,7 @@ print(len(Xs))
 # core = ComplexFromLigands(ligands, CA, geom)
 # core.AddConformer()
 # core.ToXYZ('C:/Users/ivan-/Desktop/core.xyz')
-# path_core = 'C:/Users/ivan-/Desktop/core.xyz'
+# pathCore = 'C:/Users/ivan-/Desktop/core.xyz'
 # # modified
 # ligands = ['c1ccccc1[P:2](c1ccccc1)CC[N@H:3](->[*])CC[N+]=1C(C#N)=C(C#CC(C)(C)C)N(c2c(C)cc(C)cc(C)2)[C-:4]1', '[O+]#[C-:1]',  '[O+]#[C-:5]', '[O+]#[C-:6]']
 # #ligands = ['CC#[N:1]','CC#[N:2]','CC#[N:3]', '[O+]#[C-:4]',  '[O+]#[C-:5]', '[O+]#[C-:6]']
@@ -99,9 +99,9 @@ print(len(Xs))
 # X = ComplexFromLigands(ligands, CA, geom)
 # # # constrained embedding
 # ignoreHs = True
-# clear_confs = True
-# #flag = X.AddConstrainedConformer(core, confId = 0, ignoreHs = ignoreHs, clear_confs = clear_confs)
-# flag = X.AddConstrainedConformerFromXYZ(path_core, ignoreHs = ignoreHs, clear_confs = clear_confs)
+# clearConfs = True
+# #flag = X.AddConstrainedConformer(core, confId = 0, ignoreHs = ignoreHs, clearConfs = clearConfs)
+# flag = X.AddConstrainedConformerFromXYZ(pathCore, ignoreHs = ignoreHs, clearConfs = clearConfs)
 # print(flag)
 # if flag != -1:
 #     X.ToXYZ('C:/Users/ivan-/Desktop/full.xyz')
@@ -151,5 +151,5 @@ print(len(Xs))
 # X = ComplexFromLigands(ligands, CA, geom)
 # X.AddConformer()
 # X.ToXYZ('C:/Users/ivan-/Desktop/x.xyz')
-# Xs = X.GetStereomers(drop_enantiomers = False)
+# Xs = X.GetStereomers(dropEnantiomers = False)
 
