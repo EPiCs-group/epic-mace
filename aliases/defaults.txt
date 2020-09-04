@@ -1,5 +1,0 @@
-numConfs: 5
-rmsThresh: 2.0
-lowestConf: False
-stereomers: all
-
