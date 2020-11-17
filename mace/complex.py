@@ -6,7 +6,7 @@ geometries
 
 #%% Must DOs:
 
-# TODO: change parameters naming to camelCase
+# TODO: isotopes to maps for coord sphere
 # TODO: add charge to properties
 # TODO: AddBondedLigand: add stereo_dummy flag
 # TODO: error texts
@@ -1785,8 +1785,8 @@ class Complex():
     def ToXYZBlock(self, confId = -2):
         '''
         Returns XYZ as text block
-        if confId = -1, conformer with the lowest energy will be saved
-        if confId = -2, all conformers will be saved
+        If confId is -1 or "min", conformer with the lowest energy will be saved
+        If confId is -2 or "all", all conformers will be saved
         '''
         if self._PrintErrorInit():
             return None
@@ -1794,9 +1794,9 @@ class Complex():
         if not N:
             raise ValueError('Bad conformer ID: complex has no conformers')
         # prepare conf idxs
-        if confId == -2:
+        if confId in (-2, 'all'):
             conf_idxs = list(range(N))
-        elif confId == -1:
+        elif confId in (-1, 'min'):
             minE, minI = float('inf'), None
             for i in range(N):
                 E = self.mol3D.GetConformer(i).GetDoubleProp('E')
@@ -1816,8 +1816,8 @@ class Complex():
     def ToXYZ(self, path, confId = -2):
         '''
         Saves found conformers in XYZ format
-        if confId = -1, conformer with the lowest energy will be saved
-        if confId = -2, all conformers will be saved
+        If confId is -1 or "min", conformer with the lowest energy will be saved
+        If confId is -2 or "all", all conformers will be saved
         '''
         text = self.ToXYZBlock(confId)
         with open(path, 'w') as outf:

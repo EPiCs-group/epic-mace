@@ -54,7 +54,7 @@ ligands = ['C[P:2](C)CC[NH:3]CC[N+]=1C=CN(C)[C-:4]1', '[O+]#[C-:1]', '[O+]#[C-:5
 #ligands = ['c1ccccc1[P:2](c1ccccc1)CC[NH:3]CCC1=CN(C)C(c2c(C)cc(C)cc(C)2)=[N:4]1', '[O+]#[C-:1]', '[H-:5]', '[H-:6]']
 ligands = ['c1ccccc1[C-:4]=CC=[C-:5]c1ccccc1', '[O+]#[C-:1]', '[O+]#[C-:2]', '[O+]#[C-:3]', '[O+]#[C-:6]']
 #ligands = ['C[P:2](C)CCN1C=C[N+](CC[P:4](C)C)=[C-:3]1', '[O+]#[C-:1]', '[O+]#[C-:5]', '[O+]#[C-:6]']
-CA = '[*+2]'
+CA = '[Ru+2]'
 geom = 'OH'
 regime = 'all'
 dropEnantiomers = True
@@ -62,10 +62,10 @@ X = mace.ComplexFromLigands(ligands, CA, geom)
 Xs = X.GetStereomers(regime = regime, dropEnantiomers = dropEnantiomers)
 print(len(Xs))
 
-# # 3D
-# for i, x in enumerate(Xs):
-#     x.AddConformers(n = 3, rmsThresh = 2.0)
-#     x.ToXYZ(f'C:/Users/ivan-/Desktop/x_{i}.xyz', -2)
+# 3D
+for i, x in enumerate(Xs):
+    x.AddConformers(numConfs = 3, rmsThresh = 2.0)
+    x.ToXYZ(f'C:/Users/ivan-/Desktop/x_{i}.xyz', -2)
 
 # # mol3Dx coords
 # idx = 2

@@ -1,0 +1,22 @@
+[
+ {"num": 1, "name": "Resonance in benzoate complex",
+  "smiles": "[Cr+3]12345[O-]C(=O1)c1ccccc1.[O-]2C(=O3)c1ccccc1.[O-]4C(=O5)c1ccccc1 |C:12.14,10.11,3.3,1.0,19.22,21.25|",
+  "ligands": ["c1ccccc1C(=[O:1])[O-:2]", "c1ccccc1C(=[O:3])[O-:4]", "c1ccccc1C(=[O:5])[O-:6]"],
+  "CA": "[Cr+3]", "geom": "OH", "regime": "all", "minTransCycle": null,
+  "numStereomers": 1, "numEnantiomers": 2},
+ {"num": 2, "name": "Resonance in acetate complex",
+  "smiles": "[Cr+3]12345[O-]C(C)=O1.CC([O-]2)=O3.CC([O-]4)=O5 |C:1.0,4.4,7.7,8.9,11.12,12.14|",
+  "ligands": ["CC(=[O:1])[O-:2]", "CC(=[O:3])[O-:4]", "CC(=[O:5])[O-:6]"],
+  "CA": "[Cr+3]", "geom": "OH", "regime": "all", "minTransCycle": null,
+  "numStereomers": 1, "numEnantiomers": 2},
+ {"num": 3, "name": "",
+  "smiles": "",
+  "ligands": [],
+  "CA": "", "geom": "", "regime": "all", "minTransCycle": null,
+  "numStereomers": 0, "numEnantiomers": 0},
+ {"num": 4, "name": "",
+  "smiles": "",
+  "ligands": [],
+  "CA": "", "geom": "", "regime": "all", "minTransCycle": null,
+  "numStereomers": 0, "numEnantiomers": 0}
+]

@@ -76,8 +76,9 @@ def GetLigands():
     # check ligands
     for name, smiles in info.items():
         mol = MolFromSmiles(smiles)
-        
-        
+        if not mol:
+            raise ValueError(f'Bad ligand aliases file format: SMILES of {name} is not readable: {smiles}')
+        DAs = [_.GetIdx() for _ in []]
         pass
     
     return info
