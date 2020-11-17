@@ -7,65 +7,64 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import mace
 
 
-#%% Stereo
+# paths
+path_tests = os.path.join(os.path.dirname(__file__), 'inputs/stereo.json')
+path_xyz = os.path.join(os.path.dirname(__file__), 'xyz')
 
 # load tests
-stereo_tests = json.load(os.path.join(os.path.dirname(__file__), 'inputs/stereo.json'))
+with open(path_tests, 'r') as inpf:
+    text = inpf.read()
+stereo_tests = json.loads(text)
 
 # run tests
 for test in stereo_tests:
-    pass
-
-
-# # #1: resonance forms, benzoates # TODO: too slow
-# smiles = '[Cr+3]12345[O-]C(=O1)c1ccccc1.[O-]2C(=O3)c1ccccc1.[O-]4C(=O5)c1ccccc1 |C:12.14,10.11,3.3,1.0,19.22,21.25|'
-# ligands = ['c1ccccc1C(=[O:1])[O-:2]', 'c1ccccc1C(=[O:3])[O-:4]', 'c1ccccc1C(=[O:5])[O-:6]']
-# CA = '[Cr+3]'
-# geom = 'OH'
-# Xs = [mace.Complex(smiles, geom),
-#       mace.ComplexFromLigands(ligands, CA, geom)]
-# flag = False
-# print('Test #1: ', end = '')
-# for X in Xs:
-#     if len(X.GetStereomers(regime = 'all', dropEnantiomers = True)) != 1:
-#         flag = True
-#     if len(X.GetStereomers(regime = 'all', dropEnantiomers = False)) != 2:
-#         flag = True
-# print(f'{"failed" if flag else "success"}\n')
-
-
-# # #2: resonance forms, aceatates
-# smiles = '[Cr+3]12345[O-]C(C)=O1.CC([O-]2)=O3.CC([O-]4)=O5 |C:1.0,4.4,7.7,8.9,11.12,12.14|'
-# ligands = ['CC(=[O:1])[O-:2]', 'CC(=[O:3])[O-:4]', 'CC(=[O:5])[O-:6]']
-# CA = '[Cr+3]'
-# geom = 'OH'
-# Xs = [mace.Complex(smiles, geom),
-#       mace.ComplexFromLigands(ligands, CA, geom)]
-# flag = False
-# print('Test #2: ', end = '')
-# for X in Xs:
-#     if len(X.GetStereomers(regime = 'all', dropEnantiomers = True)) != 1:
-#         flag = True
-#     if len(X.GetStereomers(regime = 'all', dropEnantiomers = False)) != 2:
-#         flag = True
-# print(f'{"failed" if flag else "success"}\n')
-
-
-# #3: resonance forms, symmetric carbene
-
-
-# 4
-
-
-
-#%% 3D generation
-
-# 
-
-
-
-
-
-
+    print(f'#{test["num"]} {test["name"]}: ', end = '')
+    # initialize complex
+    try:
+        X1 = mace.Complex(test['smiles'], test['geom'])
+        X2 = mace.ComplexFromLigands(test['ligands'], test['CA'], test['geom'])
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except:
+        print('complex initialization error')
+    # make stereomers
+    try:
+        flag = False
+        for X in (X1, X2):
+            Xs = X.GetStereomers(regime = test['regime'],
+                                 minTransCycle = test['minTransCycle'],
+                                 dropEnantiomers = False)
+            if len(Xs) != test['numEnantiomers']:
+                flag = True
+            Xs = X.GetStereomers(regime = test['regime'],
+                                 minTransCycle = test['minTransCycle'],
+                                 dropEnantiomers = True)
+            if len(Xs) != test['numStereomers']:
+                flag = True
+        if flag:
+            print("failed")
+            continue
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except:
+        print('stereomer search error')
+    # make 3D
+    if not test['3D']:
+        continue
+    for X in Xs:
+        try:
+            X.AddConformers(numConfs = 5, rmsThresh = 2.0)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            print('3D generation error')
+        if X.GetNumConformers() == 0:
+            print('success but no 3D')
+            continue
+        if not os.path.isdir(f'{path_xyz}/{test["num"]}'):
+            os.mkdir(f'{path_xyz}/{test["num"]}')
+        X.ToXYZ(f'{path_xyz}/{test["num"]}/min.xyz', confId = -2)
+        X.ToXYZ(f'{path_xyz}/{test["num"]}/all.xyz', confId = -1)
+        print('success')
 
 
