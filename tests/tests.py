@@ -16,9 +16,9 @@ with open(path_tests, 'r') as inpf:
     text = inpf.read()
 tests = json.loads(text)
 
-# # testing
-# idxs = [9]
-# tests = [test for i, test in enumerate(tests) if i in idxs]
+# testing
+idxs = [10]
+tests = [test for i, test in enumerate(tests) if i in idxs]
 
 # run tests
 for test in tests:

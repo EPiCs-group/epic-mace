@@ -48,5 +48,10 @@
   "smiles": "C1C[NH:3]2CC[P:2](c3ccccc3)(c3ccccc3)[Ru+2]2([C-:4]2=[N+]1C=CN2c1c(C)cc(cc1C)C)([C-:1]#[O+])([H-:6])[H-:5] |c:22,25,C:2.20,5.19,19.21,35.40,36.41,33.38|",
   "ligands": ["c1ccccc1[P:2](c1ccccc1)CC[NH:3]CC[N+]=1C=CN(c2c(C)cc(C)cc(C)2)[C-:4]1", "[O+]#[C-:1]", "[H-:5]", "[H-:6]"],
   "CA": "[Ru+2]", "geom": "OH", "regime": "all", "minTransCycle": null, "3D": true,
-  "numStereomers": 9, "numEnantiomers": 18}
+  "numStereomers": 9, "numEnantiomers": 18},
+ {"num": 10, "name": "Cisplatin",
+  "smiles": "[NH3:3][Pt++]([NH3:4])([Cl-:2])[Cl-:1] |C:3.2,4.3,0.0,2.1|",
+  "ligands": ["[Cl-:1]", "[Cl-:2]", "[NH3:3]", "[NH3:4]"],
+  "CA": "[Pt+2]", "geom": "SP", "regime": "all", "minTransCycle": null, "3D": true,
+  "numStereomers": 2, "numEnantiomers": 2}
 ]

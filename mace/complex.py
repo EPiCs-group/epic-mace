@@ -709,7 +709,8 @@ class Complex():
     ##########################
     
     # force field parameters
-    _FFParams = {'tether' :  100.0,
+    _FFParams = {'X*'     :    2.0,
+                 'tether' :  100.0,
                  'kXL'    :  500.0,
                  'kX*'    : 1000.0,
                  'XLA'    :  180.0,
