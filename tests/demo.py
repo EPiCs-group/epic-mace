@@ -23,7 +23,7 @@ for i, x in enumerate(Xs):
     x.ToXYZ(f'{path_dir}/x_{i}.xyz')
 
 
-#%% 3D
+#%% 3D from ChemAxon Marvin SMILES
 
 smiles = '[Co+3]([NH3:4])([NH3:5])([NH3:3])([F-:1])([F-:6])[F-:2] |C:4.3,5.4,1.0,6.5,2.1,3.2|'
 geom = 'OH'
@@ -32,7 +32,7 @@ X.AddConformer()
 X.ToXYZ(f'{path_dir}/x.xyz')
 
 
-#%% 3D
+#%% 3D from ligands
 
 ligands = ['CN1C=C[N+](CC[NH:3]CC[P:2](C)C)=[C-:4]1 |c:2,12|',
            '[C-:6]#[O+]', '[H-:1]', '[H-:5]']
@@ -45,7 +45,7 @@ X.AddConformers(numConfs = 5, rmsThresh = 2.0)
 X.ToXYZ(f'{path_dir}/x.xyz')
 
 
-#%% Substituents
+#%% Substituents support
 
 smiles = '[*]C1=C([*])N([C-:4]2=[N+]1CC[NH:3]1[Ru++]2([C-:6]#[O+])([P:2](CC1)(C)C)([H-:1])[H-:5])C |$_R1;;;_R2;;;;;;;;;;;;;;;;;$,c:1,5,C:13.14,9.10,5.11,18.20,11.12,19.21|'
 mol = mace.MolFromSmiles(smiles)
@@ -53,7 +53,6 @@ subs = {'R1': '[*]C', 'R2': '[*]N(=O)=O'}
 mol = mace.AddSubsToMol(mol, subs)
 geom = 'OH'
 X = mace.ComplexFromMol(mol, geom)
-
 
 
 #%% Constrained embedding
@@ -69,8 +68,5 @@ geom = 'OH'
 X = mace.Complex(smiles, geom)
 X.AddConstrainedConformerFromXYZ(pathCore = f'{path_dir}/x.xyz', ignoreHs = False)
 X.ToXYZ(f'{path_dir}/y.xyz')
-
-
-
 
 

@@ -203,6 +203,27 @@ def is_good_ligand(smiles):
     return True
 
 
+def reformat_carbene(smiles):
+    '''
+    Trasnforms N-C carbene to the corresponding carbanion
+    '''
+    mol = Chem.MolFromSmiles(smiles)
+    DAs = [a for a in mol.GetAtoms() if a.GetAtomMapNum()]
+    for DA in DAs:
+        if DA.GetSymbol() != 'C' or DA.GetNumRadicalElectrons() != 2:
+            continue
+        ns = DA.GetNeighbors()
+        idx = [a.GetSymbol() for a in ns].index('N')
+        N = ns[idx]
+        DA.SetFormalCharge(-1)
+        DA.SetNumRadicalElectrons(0)
+        N.SetFormalCharge(1)
+        bond = mol.GetBondBetweenAtoms(DA.GetIdx(), N.GetIdx())
+        bond.SetBondType(Chem.BondType.DOUBLE)
+    
+    return Chem.MolToSmiles(mol)
+
+
 
 #%% Main code
 
@@ -255,7 +276,11 @@ for i, (smiles, refcodes) in enumerate(spls_unique.items()):
     for a in mol.GetAtoms():
         if a.GetAtomMapNum():
             n += 1
-    text.append(f'SP{i},SP,{n},{smiles},{refcodes}')
+    new_smiles = reformat_carbene(smiles)
+    # if not Chem.MolFromSmiles(new_smiles):
+    #     new_smiles = smiles
+    #     print(f'SP: {i}')
+    text.append(f'SP{i},SP,{n},{new_smiles},{refcodes}')
 # same for OH
 for i, (smiles, refcodes) in enumerate(ohls_unique.items()):
     mol = Chem.MolFromSmiles(smiles)
@@ -264,7 +289,11 @@ for i, (smiles, refcodes) in enumerate(ohls_unique.items()):
     for a in mol.GetAtoms():
         if a.GetAtomMapNum():
             n += 1
-    text.append(f'OH{i},OH,{n},{smiles},{refcodes}')
+    new_smiles = reformat_carbene(smiles)
+    # if not Chem.MolFromSmiles(new_smiles):
+    #     new_smiles = smiles
+    #     print(f'OH: {i}')
+    text.append(f'OH{i},OH,{n},{new_smiles},{refcodes}')
 # save file
 with open(path_out, 'w') as outf:
     outf.write('\n'.join(text)+'\n')
@@ -272,10 +301,10 @@ with open(path_out, 'w') as outf:
 # check ligands
 from rdkit.Chem import Draw
 for i, (smiles, refcodes) in enumerate(spls_unique.items()):
-    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.MolFromSmiles(reformat_carbene(smiles))
     Draw.MolToFile(mol, f'{path_png}/square_planar/{i}.png', (300, 300) )
 for i, (smiles, refcodes) in enumerate(ohls_unique.items()):
-    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.MolFromSmiles(reformat_carbene(smiles))
     Draw.MolToFile(mol, f'{path_png}/octahedral/{i}.png', (300, 300) )
 
 
