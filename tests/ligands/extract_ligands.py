@@ -35,7 +35,7 @@ def read_smi(path, metals, CNs):
             n = len(ms)
             nd = len([a for a in mol.GetAtoms() if a.GetSymbol() not in ligand_elems])
             if n == 1 and nd == 1 and len(CA.GetNeighbors()) in CNs:
-                complexes.append(smi)
+                complexes.append( (refcode, smi) )
     
     return complexes
 
@@ -220,50 +220,62 @@ OH = read_smi(path_mn, ['Mn'], [6]) + read_smi(path_ru, ['Ru'], [6])
 
 # SP
 spls = []
-for smiles in SP:
-    spls += extract_ligands(smiles)
-spls = [pretify_ligand(_) for _ in spls]
-spls = [_ for _ in spls if is_good_ligand(_)]
-for l in spls:
-    is_good_ligand(l)
-spls = list(set([Chem.MolToSmiles(Chem.MolFromSmiles(_)) for _ in spls]))
+for refcode, smiles in SP:
+    spls += [(refcode, ligand) for ligand in extract_ligands(smiles)]
+spls = [(refcode, pretify_ligand(smiles)) for refcode, smiles in spls]
+spls = [(refcode, smiles) for refcode, smiles in spls if is_good_ligand(smiles)]
+spls_unique = {}
+for refcode, smiles in spls:
+    new_smiles = Chem.MolToSmiles(Chem.MolFromSmiles(smiles))
+    if new_smiles in spls_unique:
+        spls_unique[new_smiles].append(refcode)
+    else:
+        spls_unique[new_smiles] = [refcode]
 
 # OH
 ohls = []
-for smiles in OH:
-    ohls += extract_ligands(smiles)
-ohls = [pretify_ligand(_) for _ in ohls]
-ohls = [_ for _ in ohls if is_good_ligand(_)]
-ohls = list(set([Chem.MolToSmiles(Chem.MolFromSmiles(_)) for _ in ohls]))
+for refcode, smiles in OH:
+    ohls += [(refcode, ligand) for ligand in extract_ligands(smiles)]
+ohls = [(refcode, pretify_ligand(smiles)) for refcode, smiles in ohls]
+ohls = [(refcode, smiles) for refcode, smiles in ohls if is_good_ligand(smiles)]
+ohls_unique = {}
+for refcode, smiles in ohls:
+    new_smiles = Chem.MolToSmiles(Chem.MolFromSmiles(smiles))
+    if new_smiles in ohls_unique:
+        ohls_unique[new_smiles].append(refcode)
+    else:
+        ohls_unique[new_smiles] = [refcode]
 
 # make table with ligands info
-text = ['id,geom,n,smiles']
-for i, l in enumerate(spls):
-    mol = Chem.MolFromSmiles(l)
+text = ['id,geom,n,smiles,refcodes']
+for i, (smiles, refcodes) in enumerate(spls_unique.items()):
+    mol = Chem.MolFromSmiles(smiles)
+    refcodes = ';'.join(refcodes)
     n = 0
     for a in mol.GetAtoms():
         if a.GetAtomMapNum():
             n += 1
-    text.append(f'SP{i},SP,{n},{l}')
+    text.append(f'SP{i},SP,{n},{smiles},{refcodes}')
 # same for OH
-for i, l in enumerate(ohls):
-    mol = Chem.MolFromSmiles(l)
+for i, (smiles, refcodes) in enumerate(ohls_unique.items()):
+    mol = Chem.MolFromSmiles(smiles)
+    refcodes = ';'.join(refcodes)
     n = 0
     for a in mol.GetAtoms():
         if a.GetAtomMapNum():
             n += 1
-    text.append(f'OH{i},OH,{n},{l}')
+    text.append(f'OH{i},OH,{n},{smiles},{refcodes}')
 # save file
 with open(path_out, 'w') as outf:
     outf.write('\n'.join(text)+'\n')
 
 # check ligands
 from rdkit.Chem import Draw
-for i, l in enumerate(spls):
-    mol = Chem.MolFromSmiles(l)
-    Draw.MolToFile(mol, f'{path_png}/square_planar/{i}.png', (600, 600) )
-for i, l in enumerate(ohls):
-    mol = Chem.MolFromSmiles(l)
-    Draw.MolToFile(mol, f'{path_png}/octahedral/{i}.png', (600, 600) )
+for i, (smiles, refcodes) in enumerate(spls_unique.items()):
+    mol = Chem.MolFromSmiles(smiles)
+    Draw.MolToFile(mol, f'{path_png}/square_planar/{i}.png', (300, 300) )
+for i, (smiles, refcodes) in enumerate(ohls_unique.items()):
+    mol = Chem.MolFromSmiles(smiles)
+    Draw.MolToFile(mol, f'{path_png}/octahedral/{i}.png', (300, 300) )
 
 
