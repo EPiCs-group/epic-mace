@@ -8,9 +8,6 @@ import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import mace
 
-from _thread import interrupt_main
-from threading import Timer
-
 
 #%% Functions
 
@@ -46,7 +43,6 @@ def generate_3D(systems, params):
     minTransCycle = params['mTS']
     numConfs = params['numConfs']
     maxAttempts = params['maxAttempts']
-    timeout = params['timeout']
     maxResonanceStructures = params['maxResonanceStructures']
     
     # check subdir
@@ -55,40 +51,22 @@ def generate_3D(systems, params):
     
     # prepare output
     with open(f'{path}/{subdir}_temp.csv', 'w') as outf:
-        outf.write('complex,time,success,no3D,error\n')
+        outf.write('complex,success,no3D,error\n')
     
     # generate systems
     for i, (basename, ligands) in enumerate(systems.items()):
         print(f'{i:>4} of {len(systems)}')
-        result = {'err': 0, 'no3D': 0, 'success': 0, 'time': 0}
+        result = {'err': 0, 'no3D': 0, 'success': 0}
         # stereomers
-        try:
-            T = Timer(timeout, interrupt_main)
-            X = mace.ComplexFromLigands(ligands, CA, geom, maxResonanceStructures)
-            Xs = X.GetStereomers(regime = regime, minTransCycle = minTransCycle)
-            T.cancel()
-        except KeyboardInterrupt:
-            T.cancel()
-            result['time'] = 1
-            with open(f'{path}/{subdir}_temp.csv', 'a') as outf:
-                outf.write(f'{basename},{result["time"]},{result["success"]},{result["no3D"]},{result["err"]}\n')
-            continue
+        X = mace.ComplexFromLigands(ligands, CA, geom, maxResonanceStructures)
+        Xs = X.GetStereomers(regime = regime, minTransCycle = minTransCycle)
         # 3D
         for i, X in enumerate(Xs):
             try:
-                # T = Timer(timeout, interrupt_main)
                 X.AddConformers(numConfs = numConfs, maxAttempts = maxAttempts)
-                # T.cancel()
-            # except KeyboardInterrupt:
-            #     T.cancel()
-            #     result['time'] += 1
-            #     continue
-            # except SystemExit:
             except (SystemExit, KeyboardInterrupt):
-                # T.cancel()
                 raise
             except:
-                # T.cancel()
                 result['err'] += 1
                 continue
             if X.GetNumConformers() == 0:
@@ -97,7 +75,7 @@ def generate_3D(systems, params):
             result['success'] += 1
             X.ToXYZ(f'{path}/{subdir}/{basename}_{i}.xyz', -1)
         with open(f'{path}/{subdir}_temp.csv', 'a') as outf:
-            outf.write(f'{basename},{result["time"]},{result["success"]},{result["no3D"]},{result["err"]}\n')
+            outf.write(f'{basename},{result["success"]},{result["no3D"]},{result["err"]}\n')
     
     return
 
@@ -122,8 +100,7 @@ aux_ls = {'H': '[H-:1]', 'Cl': '[Cl-:1]', 'CO': '[C-:1]#[O+]'}
 # params = {'path'  : path_xyz, 'subdir': 'SP',
 #           'CA'    : '[Pd+2]', 'geom'  : 'SP',
 #           'regime': 'CA', 'mTS'   : 12,
-#           'numConfs': 5, 'maxAttempts': 10, 'maxResonanceStructures': -1,
-#           'timeout': 30}
+#           'numConfs': 5, 'maxAttempts': 10, 'maxResonanceStructures': 1}
 
 # # ligands
 # systems = {name: [smiles] for n, name, smiles in ls['SP']}
@@ -139,8 +116,7 @@ aux_ls = {'H': '[H-:1]', 'Cl': '[Cl-:1]', 'CO': '[C-:1]#[O+]'}
 params = {'path'  : path_xyz, 'subdir': 'OH',
           'CA'    : '[Ru+2]', 'geom'  : 'OH',
           'regime': 'CA', 'mTS'   : None,
-          'numConfs': 3, 'maxAttempts': 10, 'maxResonanceStructures': 10**4,
-          'timeout': 30}
+          'numConfs': 3, 'maxAttempts': 10, 'maxResonanceStructures': 1}
 
 # ligands
 systems = {name: [smiles] for n, name, smiles in ls['OH']}

@@ -383,7 +383,7 @@ def AddSubsToMol(mol, RsSmiles):
 
 #%% Complex initialization
 
-def ComplexFromMol(mol, geom, maxResonanceStructures = 10**4):
+def ComplexFromMol(mol, geom, maxResonanceStructures = 1):
     '''
     Initializes Complex from RDKit Mol. Use it if mol->smiles transform is unwanted,
     e.g. if molecule contains *=DA->CA fragment with stereospecified double bond
@@ -400,7 +400,7 @@ def ComplexFromMol(mol, geom, maxResonanceStructures = 10**4):
     return X
 
 
-def ComplexFromLigands(ligands, CA, geom, maxResonanceStructures = 10**4):
+def ComplexFromLigands(ligands, CA, geom, maxResonanceStructures = 1):
     '''
     Input:
       * ligands: the list of ligands' SMILES. Donor atoms are those ones
@@ -879,12 +879,21 @@ class Complex():
         Prepares set of all possible smiles to compare with other complexes
         '''
         mol_norm = deepcopy(self.mol)
-        # modify X<-[C-]=[N+] fragments to X<-[C]-[N] (symmetry problems for carbenes) # GetSubstructMatches does not work properly with kekulization
+        # fix resonance issues without ResonanceMolSupplier
         Chem.Kekulize(mol_norm, clearAromaticFlags = True)
+        # modify X<-[C-]=[N+] fragments to X<-[C]-[N] (carbenes)
         for i, j, k in mol_norm.GetSubstructMatches(Chem.MolFromSmarts('[*]<-[C-]=[N+]')):
             mol_norm.GetAtomWithIdx(j).SetFormalCharge(0)
             mol_norm.GetAtomWithIdx(k).SetFormalCharge(0)
             mol_norm.GetBondBetweenAtoms(j, k).SetBondType(Chem.rdchem.BondType.SINGLE)
+        # C([O-]->[*])=O->[*] to [C+]([O-]->[*])-[O-]->[*]
+        for i, j, k in mol_norm.GetSubstructMatches(Chem.MolFromSmarts('[O-]C=[O]')):
+            # TODO: check bonding better
+            if mol_norm.GetAtomWithIdx(i).GetIsotope() and \
+               mol_norm.GetAtomWithIdx(k).GetIsotope():
+                mol_norm.GetAtomWithIdx(j).SetFormalCharge(1)
+                mol_norm.GetAtomWithIdx(k).SetFormalCharge(-1)
+                mol_norm.GetBondBetweenAtoms(j, k).SetBondType(Chem.rdchem.BondType.SINGLE)
         mol_norm = Chem.MolFromSmiles(Chem.MolToSmiles(mol_norm, canonical = False))
         # generate all ligand orientations
         mol = deepcopy(mol_norm)
@@ -926,6 +935,9 @@ class Complex():
                 mol.GetAtomWithIdx(idx).SetIsotope(EqOrs[num][i])
             for idx, num in _DAs_inv.items():
                 mol_inv.GetAtomWithIdx(idx).SetIsotope(EqOrsInv[num][i])
+            # add basic mol
+            _ID.append(Chem.CanonSmiles(Chem.MolToSmiles(mol)))
+            _eID.append(Chem.CanonSmiles(Chem.MolToSmiles(mol_inv)))
             # add resonance structures to mols
             if self.maxResonanceStructures > 1:
                 idx = 0
@@ -945,7 +957,7 @@ class Complex():
         self._eID = set(_eID)
     
     
-    def __init__(self, smiles, geom, maxResonanceStructures = 10**4):
+    def __init__(self, smiles, geom, maxResonanceStructures = 1):
         '''
         Generates Complex object from SMILES with stereo info encoded as
         isotopic labels of donor atoms
@@ -1100,7 +1112,7 @@ class Complex():
             # transform mols to Complex objects and return them
             stereomers = []
             for m in mols:
-                stereomers.append( Complex(Chem.MolToSmiles(m), self._geom) )
+                stereomers.append( Complex(Chem.MolToSmiles(m), self._geom, self.maxResonanceStructures) )
             return stereomers
         # find restrictions on DA positions
         pairs = self._FindNeighboringDAs(minTransCycle)
@@ -1125,7 +1137,7 @@ class Complex():
                 if drop:
                     continue
                 addend.append(m1)
-            addend = [Complex(Chem.MolToSmiles(m), self._geom) for m in addend]
+            addend = [Complex(Chem.MolToSmiles(m), self._geom, self.maxResonanceStructures) for m in addend]
             # filter uniques
             drop = []
             for i in range(len(addend)-1):
