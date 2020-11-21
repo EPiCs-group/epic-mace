@@ -7,6 +7,7 @@ Prepares ligands from CSD complexes encoded as SMILES
 import os
 
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 
 #%% Functions
@@ -225,7 +226,7 @@ def reformat_carbene(smiles):
 
 
 
-#%% Main code
+#%% Load data
 
 # paths
 path_dir = os.path.dirname(__file__)
@@ -233,11 +234,15 @@ path_sp = os.path.join(path_dir, 'csd/SP.smi')
 path_mn = os.path.join(path_dir, 'csd/OH_Mn.smi')
 path_ru = os.path.join(path_dir, 'csd/OH_Ru.smi')
 path_out = os.path.join(path_dir, 'cleared_ligands/csd_ligands.csv')
+path_bad = os.path.join(path_dir, 'cleared_ligands/no3D_ligands.txt')
 path_png = os.path.join(path_dir, 'cleared_ligands')
 
 # read data
 SP = read_smi(path_sp, ['Pd', 'Pt'], [4])
 OH = read_smi(path_mn, ['Mn'], [6]) + read_smi(path_ru, ['Ru'], [6])
+
+
+#%% Extract ligands
 
 # SP
 spls = []
@@ -252,6 +257,7 @@ for refcode, smiles in spls:
         spls_unique[new_smiles].append(refcode)
     else:
         spls_unique[new_smiles] = [refcode]
+spls_unique = {reformat_carbene(smiles): refcodes for smiles, refcodes in spls_unique.items()}
 
 # OH
 ohls = []
@@ -266,45 +272,80 @@ for refcode, smiles in ohls:
         ohls_unique[new_smiles].append(refcode)
     else:
         ohls_unique[new_smiles] = [refcode]
+ohls_unique = {reformat_carbene(smiles): refcodes for smiles, refcodes in ohls_unique.items()}
 
-# make table with ligands info
-text = ['id,geom,n,smiles,refcodes']
+
+#%% Filter ligands by 3D-generability
+
+# check 3D-generability
+bad_3D = []
+ligands = []
+idx = 0
 for i, (smiles, refcodes) in enumerate(spls_unique.items()):
+    #print(i) # testing
+    # make 3D
     mol = Chem.MolFromSmiles(smiles)
-    refcodes = ';'.join(refcodes)
+    flag = AllChem.EmbedMolecule(mol)
+    if flag == -1:
+        bad_3D.append(smiles)
+        continue
+    # get ligand info
     n = 0
     for a in mol.GetAtoms():
         if a.GetAtomMapNum():
             n += 1
-    new_smiles = reformat_carbene(smiles)
-    # if not Chem.MolFromSmiles(new_smiles):
-    #     new_smiles = smiles
-    #     print(f'SP: {i}')
-    text.append(f'SP{i},SP,{n},{new_smiles},{refcodes}')
+    ligands.append( (f'SP{idx}', 'SP', n, smiles, ';'.join(refcodes)) )
+    idx += 1
+
 # same for OH
+idx = 0
 for i, (smiles, refcodes) in enumerate(ohls_unique.items()):
+    #print(i) # testing
+    # make 3D
     mol = Chem.MolFromSmiles(smiles)
-    refcodes = ';'.join(refcodes)
+    flag = AllChem.EmbedMolecule(mol)
+    if flag == -1:
+        bad_3D.append(smiles)
+        continue
+    # get ligand info
     n = 0
     for a in mol.GetAtoms():
         if a.GetAtomMapNum():
             n += 1
-    new_smiles = reformat_carbene(smiles)
-    # if not Chem.MolFromSmiles(new_smiles):
-    #     new_smiles = smiles
-    #     print(f'OH: {i}')
-    text.append(f'OH{i},OH,{n},{new_smiles},{refcodes}')
+    ligands.append( (f'OH{idx}', 'OH', n, smiles, ';'.join(refcodes)) )
+    idx += 1
+
+
+
+#%% Save data
+
+# table with ligands info
+text = ['id,geom,n,smiles,refcodes']
+for idx, geom, n, smiles, refcodes in ligands:
+    text.append(f'{idx},{geom},{n},{smiles},{refcodes}')
 # save file
 with open(path_out, 'w') as outf:
     outf.write('\n'.join(text)+'\n')
 
-# check ligands
+# bad ligands
+with open(path_bad, 'w') as outf:
+    outf.write('\n'.join(bad_3D)+'\n')
+
+# check subfolders for pictures
+if not os.path.isdir(f'{path_png}/SP'):
+    os.mkdir(f'{path_png}/SP')
+if not os.path.isdir(f'{path_png}/OH'):
+    os.mkdir(f'{path_png}/OH')
+if not os.path.isdir(f'{path_png}/bad_3D'):
+    os.mkdir(f'{path_png}/bad_3D')
+
+# make pictures
 from rdkit.Chem import Draw
-for i, (smiles, refcodes) in enumerate(spls_unique.items()):
-    mol = Chem.MolFromSmiles(reformat_carbene(smiles))
-    Draw.MolToFile(mol, f'{path_png}/square_planar/{i}.png', (300, 300) )
-for i, (smiles, refcodes) in enumerate(ohls_unique.items()):
-    mol = Chem.MolFromSmiles(reformat_carbene(smiles))
-    Draw.MolToFile(mol, f'{path_png}/octahedral/{i}.png', (300, 300) )
+for idx, geom, n, smiles, refcodes in ligands:
+    mol = Chem.MolFromSmiles(smiles)
+    Draw.MolToFile(mol, f'{path_png}/{geom}/{idx}.png')
+for i, smiles in enumerate(bad_3D):
+    mol = Chem.MolFromSmiles(smiles)
+    Draw.MolToFile(mol, f'{path_png}/bad_3D/{i}.png')
 
 

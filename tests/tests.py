@@ -95,6 +95,8 @@ for test in tests:
     print()
 
 
+# TODO: add maxResonanceStructures to parameters
+
 
 # Testing
 

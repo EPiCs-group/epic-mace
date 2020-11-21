@@ -383,12 +383,12 @@ def AddSubsToMol(mol, RsSmiles):
 
 #%% Complex initialization
 
-def ComplexFromMol(mol, geom):
+def ComplexFromMol(mol, geom, maxResonanceStructures = 10**4):
     '''
     Initializes Complex from RDKit Mol. Use it if mol->smiles transform is unwanted,
     e.g. if molecule contains *=DA->CA fragment with stereospecified double bond
     '''
-    X = Complex('[*:1]->[*]', geom)
+    X = Complex('[*:1]->[*]', geom, maxResonanceStructures)
     if not mol or not Chem.MolToSmiles(mol):
         raise ValueError('Bad molecule: None or not RDKit Mol')
     X.mol = mol
@@ -400,7 +400,7 @@ def ComplexFromMol(mol, geom):
     return X
 
 
-def ComplexFromLigands(ligands, CA, geom):
+def ComplexFromLigands(ligands, CA, geom, maxResonanceStructures = 10**4):
     '''
     Input:
       * ligands: the list of ligands' SMILES. Donor atoms are those ones
@@ -487,7 +487,7 @@ def ComplexFromLigands(ligands, CA, geom):
     Chem.SanitizeMol(mol)
     mol = Chem.RemoveHs(mol)
     
-    return ComplexFromMol(mol, geom)
+    return ComplexFromMol(mol, geom, maxResonanceStructures)
 
 
 
@@ -927,22 +927,37 @@ class Complex():
             for idx, num in _DAs_inv.items():
                 mol_inv.GetAtomWithIdx(idx).SetIsotope(EqOrsInv[num][i])
             # add resonance structures to mols
-            for m in Chem.ResonanceMolSupplier(mol):
-                _ID.append( Chem.CanonSmiles(Chem.MolToSmiles(m)) )
-            # same for inv mol
-            for m in Chem.ResonanceMolSupplier(mol_inv):
-                _eID.append( Chem.CanonSmiles(Chem.MolToSmiles(m)) )
+            if self.maxResonanceStructures > 1:
+                idx = 0
+                for m in Chem.ResonanceMolSupplier(mol):
+                    if idx >= self.maxResonanceStructures:
+                        break
+                    _ID.append( Chem.CanonSmiles(Chem.MolToSmiles(m)) )
+                    idx += 1
+                # same for inv mol
+                idx = 0
+                for m in Chem.ResonanceMolSupplier(mol_inv):
+                    if idx >= self.maxResonanceStructures:
+                        break
+                    _eID.append( Chem.CanonSmiles(Chem.MolToSmiles(m)) )
+                    idx += 1
         self._ID = set(_ID)
         self._eID = set(_eID)
     
     
-    def __init__(self, smiles, geom):
+    def __init__(self, smiles, geom, maxResonanceStructures = 10**4):
         '''
         Generates Complex object from SMILES with stereo info encoded as
         isotopic labels of donor atoms
         '''
         self._smiles_init = smiles
         self._geom = geom
+        try:
+            self.maxResonanceStructures = int(maxResonanceStructures)
+        except TypeError:
+            raise TypeError('Bad maximal number of resonance structures: must be an integer')
+        if self.maxResonanceStructures < 0:
+            raise ValueError('Bad maximal number of resonance structures: must be zero or positive')
         self.err_init = None
         # check geom
         if self._geom not in self._Geoms:
