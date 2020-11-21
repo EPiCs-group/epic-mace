@@ -1090,6 +1090,7 @@ class Complex():
             mols = [mol]
         else:
             idxs = [idx for idx, chi in Chem.FindMolChiralCenters(mol, includeUnassigned = True) if chi == '?']
+            idxs = [idx for idx in idxs if idx != self._idx_CA]
             # generate all possible combinations of stereocentres
             mols = []
             for chis in product([Chem.ChiralType.CHI_TETRAHEDRAL_CCW, Chem.ChiralType.CHI_TETRAHEDRAL_CW], repeat = len(idxs)):
