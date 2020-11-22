@@ -294,6 +294,8 @@ for i, (smiles, refcodes) in enumerate(spls_unique.items()):
     for a in mol.GetAtoms():
         if a.GetAtomMapNum():
             n += 1
+    if n < 2:
+        continue
     ligands.append( (f'SP{idx}', 'SP', n, smiles, ';'.join(refcodes)) )
     idx += 1
 
@@ -312,6 +314,8 @@ for i, (smiles, refcodes) in enumerate(ohls_unique.items()):
     for a in mol.GetAtoms():
         if a.GetAtomMapNum():
             n += 1
+    if n < 2:
+        continue
     ligands.append( (f'OH{idx}', 'OH', n, smiles, ';'.join(refcodes)) )
     idx += 1
 
