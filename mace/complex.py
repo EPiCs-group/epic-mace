@@ -6,7 +6,7 @@ geometries
 
 #%% Must DOs:
 
-# TODO: isotopes to maps for coord sphere
+# TODO: add rule for for mer- possibility of X--Y--Z ligands
 # TODO: add charge to properties
 # TODO: AddBondedLigand: add stereo_dummy flag
 # TODO: error texts
