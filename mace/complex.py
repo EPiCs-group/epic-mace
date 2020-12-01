@@ -6,7 +6,7 @@ geometries
 
 #%% Must DOs:
 
-# TODO: add rule for for mer- possibility of X--Y--Z ligands
+# TODO: add rule for for mer- possibility of X--Y--Z ligands (formulate first)
 # TODO: add charge to properties
 # TODO: AddBondedLigand: add stereo_dummy flag
 # TODO: error texts
@@ -20,6 +20,7 @@ geometries
 # TODO: Na, Ca, Al, etc as CA - fix RDKit problem with dative bonds
 # TODO: dummy as CA - substitute for any atom before embedding
 # TODO: MolFromCXSmiles: @/@@ support - achiral/chiral ligands (do we need it?)
+# TODO: move resonance and mer-k from initialization to stereomer generation - seems not useful
 # TODO: enantiomers: set of unique structures must have same stereo for CA
 # TODO: GetEnantiomer() method
 # TODO: support of other geometries (tri-/pentagonal pyramid, etc)
@@ -1044,7 +1045,7 @@ class Complex():
     def _FindNeighboringDAs(self, minTransCycle = None):
         '''
         Finds restrictions of multidentate ligands.
-        Returns pairs of DAs which must be near each over
+        Returns pairs of DAs which must be near each other
         '''
         # get DAs
         DAs = list(self._DAs.keys())
@@ -1063,7 +1064,74 @@ class Complex():
         return restrictions
     
     
-    def GetStereomers(self, regime = 'all', dropEnantiomers = True, minTransCycle = None):
+    def _FindMerOnly(self):
+        '''
+        Finds restrictions for rigid X-Y-Z fragments (fac- geometry is impossible)
+        Returns pairs of DAs which must not be near each other
+        '''
+        # get DAs
+        DAs = list(self._DAs.keys())
+        # get rings
+        rings = [list(r) for r in Chem.GetSymmSSSR(self.mol)]
+        rings = [r for r in rings if self._idx_CA in r]
+        # get neighboring DAs and the corresponding paths
+        neighbors = {}
+        paths = {}
+        for r in rings:
+            i, j = [idx for idx in r if idx in DAs]
+            # set neighbors
+            if i not in neighbors:
+                neighbors[i] = [j]
+            else:
+                neighbors[i] += [j]
+            if j not in neighbors:
+                neighbors[j] = [i]
+            else:
+                neighbors[j] += [i]
+            # path
+            idx = r.index(self._idx_CA)
+            path = r[idx+1:] + r[:idx]
+            # TODO: check path
+            if path[0] == i:
+                paths[(i,j)] = path
+                paths[(j,i)] = path[::-1]
+            elif path[0] == j:
+                paths[(i,j)] = path[::-1]
+                paths[(j,i)] = path
+        # drop DAs with less than 2 neighbors
+        drop = [idx for idx, ns in neighbors.items() if len(ns) < 2]
+        for idx in drop:
+            neighbors.pop(idx)
+        # TODO: improve rotability check
+        restricted = lambda i, j: i + j < 4 or i < 2 and j == 3 or j < 2 and i == 3
+        # check rigidity of central DA
+        restrictions = []
+        for idx, ns in neighbors.items():
+            a = self.mol.GetAtomWithIdx(idx)
+            # drop flexible
+            if not ( a.GetSymbol() in ('C', 'N') and str(a.GetHybridization()) == 'SP2' or \
+                     a.GetSymbol() == 'C' and a.GetNumRadicalElectrons() == 2 ):
+                continue
+            # check number of rotable bonds between "idx" and "ns"
+            rot_bonds = {}
+            for n in ns:
+                path = paths[(idx, n)][1:-1]
+                if len(path) < 2:
+                    rot_bonds[n] = 0
+                counter = 0
+                for i in range(len(path)-1):
+                    b = self.mol.GetBondBetweenAtoms(path[i], path[i+1])
+                    if str(b.GetBondType()) == 'SINGLE':
+                        counter += 1
+                rot_bonds[n] = counter
+            # add final restrictions
+            restrictions += [(i, j) for i, j in combinations(ns, r = 2) if restricted(rot_bonds[i], rot_bonds[j])]
+        
+        return restrictions
+    
+    
+    def GetStereomers(self, regime = 'all', dropEnantiomers = True,
+                      minTransCycle = None, merRule = False):
         '''
         Generates all possible stereomers of a complex.
         Saves stereochemistry of existing centers.
@@ -1073,7 +1141,9 @@ class Complex():
             - "all": both "CA" and "ligands" regimes.
         '''
         if regime not in ('CA', 'ligands', 'all'):
-            raise ValueError('regime variable bad value')
+            raise ValueError('Regime variable bad value: must be one of "CA", "ligands", "all"')
+        if type(merRule) is not bool:
+            raise ValueError('Bad meridial-rule: must be True or False')
         # set Mol object
         mol = deepcopy(self.mol)
         if regime == 'ligands':
@@ -1117,6 +1187,7 @@ class Complex():
             return stereomers
         # find restrictions on DA positions
         pairs = self._FindNeighboringDAs(minTransCycle)
+        mers = self._FindMerOnly() if merRule else []
         # generate all possible CA orientations
         stereomers = []
         for m in mols:
@@ -1134,6 +1205,13 @@ class Complex():
                 drop = False
                 for idx_a, idx_b in pairs:
                     if info[idx_b] not in self._Nears[self._geom][info[idx_a]]:
+                        drop = True
+                if drop:
+                    continue
+                # check mer DAs restriction
+                drop = False
+                for idx_a, idx_b in mers:
+                    if info[idx_b] in self._Nears[self._geom][info[idx_a]]:
                         drop = True
                 if drop:
                     continue
