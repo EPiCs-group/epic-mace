@@ -51,10 +51,10 @@ if __name__ == '__main__':
     
     # params
     sp_params = {'geom': 'SP', 'CA': '[Pd+2]',
-                 'regime': 'CA', 'mTS': 12, 'mRS': 1,
+                 'regime': 'CA', 'mTS': 12, 'mRS': 1, 'mer': True,
                  'numConfs': 5, 'maxAttempts': 10}
     oh_params = {'geom': 'OH', 'CA': '[Ru+2]',
-                 'regime': 'CA', 'mTS': None, 'mRS': 1,
+                 'regime': 'CA', 'mTS': None, 'mRS': 1, 'mer': True,
                  'numConfs': 3, 'maxAttempts': 10}
     systems = []
     
@@ -78,6 +78,11 @@ if __name__ == '__main__':
         if not os.path.isdir(f'{path_xyz}/{subdir}'):
             os.mkdir(f'{path_xyz}/{subdir}')
     
+    # output initialization
+    for subdir in set([_[-1] for _ in systems]):
+            with open(f'{path_xyz}/logs/{subdir}_temp.csv', 'w') as outf:
+                outf.write('complex,n,success,no3D,error,time\n')
+    
     # generate systems
     for i, (basename, n, ligands, params, subdir) in enumerate(systems):
         print(f'{i:>4} of {len(systems)}')
@@ -87,17 +92,14 @@ if __name__ == '__main__':
         regime = params['regime']
         maxResonanceStructures = params['mRS']
         minTransCycle = params['mTS']
+        merRule = params['mer']
         numConfs = params['numConfs']
         maxAttempts = params['maxAttempts']
         result = {'err': 0, 'no3D': 0, 'success': 0}
-        # output initialization
-        if i == 0:
-            with open(f'{path_xyz}/logs/{subdir}_temp.csv', 'w') as outf:
-                outf.write('complex,n,success,no3D,error,time\n')
         # stereomers
         t1 = time.time()
         X = mace.ComplexFromLigands(ligands, CA, geom, maxResonanceStructures)
-        Xs = X.GetStereomers(regime = regime, minTransCycle = minTransCycle)
+        Xs = X.GetStereomers(regime = regime, minTransCycle = minTransCycle, merRule = merRule)
         # 3D
         for i, X in enumerate(Xs):
             try:
@@ -114,6 +116,6 @@ if __name__ == '__main__':
             X.ToXYZ(f'{path_xyz}/{subdir}/{basename}_{i}.xyz', -1)
         T = time.time() - t1
         with open(f'{path_xyz}/logs/{subdir}_temp.csv', 'a') as outf:
-            outf.write(f'{basename},{result["success"]},{result["no3D"]},{result["err"]},{T:.1f}\n')
+            outf.write(f'{basename},{n},{result["success"]},{result["no3D"]},{result["err"]},{T:.1f}\n')
 
 

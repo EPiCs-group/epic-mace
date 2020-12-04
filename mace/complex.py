@@ -6,13 +6,8 @@ geometries
 
 #%% Must DOs:
 
-# TODO: add rule for for mer- possibility of X--Y--Z ligands (formulate first)
 # TODO: add charge to properties
 # TODO: AddBondedLigand: add stereo_dummy flag
-# TODO: error texts
-# TODO: functions and module descriptions
-# TODO: full testing
-# TODO: check double bond stereo in AddConstrainedConformer
 
 
 #%% Optional improvements
@@ -20,6 +15,7 @@ geometries
 # TODO: Na, Ca, Al, etc as CA - fix RDKit problem with dative bonds
 # TODO: dummy as CA - substitute for any atom before embedding
 # TODO: MolFromCXSmiles: @/@@ support - achiral/chiral ligands (do we need it?)
+# TODO: check double bond stereo in AddConstrainedConformer
 # TODO: move resonance and mer-k from initialization to stereomer generation - seems not useful
 # TODO: enantiomers: set of unique structures must have same stereo for CA
 # TODO: GetEnantiomer() method
@@ -861,6 +857,9 @@ class Complex():
         # check donor atoms labelling
         self._DAs = {_[1].GetIdx(): _[1].GetIsotope() for _ in info}
         labs = list(self._DAs.values())
+        if len(labs) > len([_ for _ in self._Geoms[self._geom] if str(_).isdigit()]):
+            raise ValueError('Bad SMILES: number of donor atoms exceeds maximal possible for given geometry')
+        # check donor atoms labelling
         if 0 in labs:
             self.err_init = 'Bad SMILES: some donor atoms don\'t have an isotopic label'
             #self._PrintErrorInit()
@@ -1108,9 +1107,18 @@ class Complex():
         restrictions = []
         for idx, ns in neighbors.items():
             a = self.mol.GetAtomWithIdx(idx)
+            flag = False
+            # sp2 or carbenes
+            if a.GetSymbol() in ('C', 'N') and str(a.GetHybridization()) == 'SP2' or \
+               a.GetSymbol() == 'C' and a.GetNumRadicalElectrons() == 2:
+                flag = True
+            # check conjugated pyrrol-like anion
+            if a.GetSymbol() == 'N' and a.GetFormalCharge() == -1:
+                hybr = [(_.GetSymbol(), str(_.GetHybridization())) for _ in a.GetNeighbors() if _.GetIdx() != self._idx_CA]
+                if ('N', 'SP2') in hybr or ('C', 'SP2') in hybr:
+                    flag = True
             # drop flexible
-            if not ( a.GetSymbol() in ('C', 'N') and str(a.GetHybridization()) == 'SP2' or \
-                     a.GetSymbol() == 'C' and a.GetNumRadicalElectrons() == 2 ):
+            if not flag:
                 continue
             # check number of rotable bonds between "idx" and "ns"
             rot_bonds = {}
@@ -1131,7 +1139,7 @@ class Complex():
     
     
     def GetStereomers(self, regime = 'all', dropEnantiomers = True,
-                      minTransCycle = None, merRule = False):
+                      minTransCycle = None, merRule = True):
         '''
         Generates all possible stereomers of a complex.
         Saves stereochemistry of existing centers.

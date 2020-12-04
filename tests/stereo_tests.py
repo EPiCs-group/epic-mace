@@ -4,7 +4,7 @@ Tests MACE code
 
 #%% Imports
 
-import sys, os, json
+import sys, os, shutil, json
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import mace
 
@@ -26,6 +26,11 @@ tests = json.loads(text)
 
 
 #%% Run tests
+
+# recreate directory
+if os.path.exists(path_xyz):
+    shutil.rmtree(path_xyz)
+os.mkdir(path_xyz)
 
 # run tests
 for idx, test in enumerate(tests):
@@ -56,12 +61,14 @@ for idx, test in enumerate(tests):
         for X in (X1, X2):
             Xs = X.GetStereomers(regime = test['regime'],
                                  minTransCycle = test['minTransCycle'],
-                                 dropEnantiomers = False)
+                                 dropEnantiomers = False,
+                                 merRule = test['merRule'])
             if len(Xs) != test['numEnantiomers']:
                 flag = True
             Xs = X.GetStereomers(regime = test['regime'],
                                  minTransCycle = test['minTransCycle'],
-                                 dropEnantiomers = True)
+                                 dropEnantiomers = True,
+                                 merRule = test['merRule'])
             if len(Xs) != test['numStereomers']:
                 flag = True
     except (KeyboardInterrupt, SystemExit):
