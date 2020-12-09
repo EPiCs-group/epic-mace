@@ -1,3 +1,6 @@
 __pycache__/
 .spyproject/
 *.png
+dist/
+build/
+*.egg-info/
