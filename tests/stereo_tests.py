@@ -5,8 +5,10 @@ Tests MACE code
 #%% Imports
 
 import sys, os, shutil, json
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import mace
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../mace')))
+from Complex import Complex, ComplexFromLigands
+# from mace import Complex, ComplexFromLigands
 
 
 #%% Parameters and data
@@ -38,9 +40,9 @@ for idx, test in enumerate(tests):
     # initialize complex
     print('... complex initialization: ', end = '')
     try:
-        X1 = mace.Complex(test['smiles'], test['geom'],
+        X1 = Complex(test['smiles'], test['geom'],
                           test['maxResonanceStructures'])
-        X2 = mace.ComplexFromLigands(test['ligands'], test['CA'], test['geom'],
+        X2 = ComplexFromLigands(test['ligands'], test['CA'], test['geom'],
                                      test['maxResonanceStructures'])
     except (KeyboardInterrupt, SystemExit):
         raise

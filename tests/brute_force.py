@@ -4,11 +4,11 @@ Tests MACE code
 
 #%% Imports
 
-import sys, os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import mace
+import sys, os, time
 
-import time
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../mace')))
+from Complex import ComplexFromLigands
+# from mace import ComplexFromLigands
 
 
 #%% Functions
@@ -98,7 +98,7 @@ if __name__ == '__main__':
         result = {'err': 0, 'no3D': 0, 'success': 0}
         # stereomers
         t1 = time.time()
-        X = mace.ComplexFromLigands(ligands, CA, geom, maxResonanceStructures)
+        X = ComplexFromLigands(ligands, CA, geom, maxResonanceStructures)
         Xs = X.GetStereomers(regime = regime, minTransCycle = minTransCycle, merRule = merRule)
         # 3D
         for i, X in enumerate(Xs):

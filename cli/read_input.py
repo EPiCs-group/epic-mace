@@ -1,9 +1,10 @@
 '''
-Command-line interface for generation of 3D coordinates of metal complexes
+Functions for reading and interpreting input files
 '''
 
 import sys, os
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
+sys.path.insert(0, os.path.join(os.path.abspath(os.path.dirname(__file__)), '../mace'))
 from Complex import (
     MolFromSmiles, AddSubsToMol,
     ComplexFromMol, ComplexFromLigands,
@@ -11,81 +12,8 @@ from Complex import (
 )
 
 
-#%% Globals
 
-path_aliases = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../aliases')
-path_Rs = os.path.join(path_aliases, 'Rs.txt')
-path_ligands = os.path.join(path_aliases, 'Ligands.txt')
-
-
-
-#%% Aliases
-
-def ReadParamFile(path):
-    '''
-    Extracts dictionary with parameters from "key: val"-formated file
-    '''
-    with open(path, 'r') as inpf:
-        text = [_.strip() for _ in inpf.readlines()]
-    text = [_ for _ in text if _]
-    # make dict
-    info = {}
-    for i, line in enumerate(text):
-        if ':' not in line:
-            raise ValueError('Bad alias file format: bad line format:\n\nLine #{i+1}: {line}\n\nIt must be in "Var: Value" format')
-        idx = line.index(':')
-        key = line[:idx].strip()
-        val = line[idx+1:].strip()
-        if key in info:
-            raise ValueError('Bad alias file format: key {key} is defined several times')
-        info[key] = val
-    
-    return info
-
-
-def GetRs():
-    '''
-    Returns dictionary of predefined substituents
-    '''
-    global path_Rs
-    # read file
-    info = ReadParamFile(path_Rs)
-    # check Rs
-    for name, smiles in info.items():
-        R = MolFromSmiles(smiles)
-        if R is None:
-            raise ValueError(f'Bad Rs aliases file format: SMILES of {name} is not readable: {smiles}')
-        dummies = [_ for _ in R.GetAtoms() if _.GetSymbol() == '*']
-        if len(dummies) != 1:
-            raise ValueError(f'Bad Rs aliases file format: SMILES of {name} must contain exactly one dummy atom: {smiles}')
-        if len(dummies[0].GetNeighbors()) != 1:
-            raise ValueError(f'Bad Rs aliases file format: SMILES of {name} must contain dummy atom bonded to exactly one atom by single bond: {smiles}')
-        if str(dummies[0].GetBonds()[0].GetBondType()) != 'SINGLE':
-            raise ValueError(f'Bad Rs aliases file format: SMILES of {name} must contain dummy atom bonded to exactly one atom by single bond: {smiles}')
-    
-    return info
-
-
-def GetLigands():
-    '''
-    Returns dictionary of predefined ligands
-    '''
-    global path_ligands
-    # read file
-    info = ReadParamFile(path_ligands)
-    # check ligands
-    for name, smiles in info.items():
-        mol = MolFromSmiles(smiles)
-        if not mol:
-            raise ValueError(f'Bad ligand aliases file format: SMILES of {name} is not readable: {smiles}')
-        DAs = [_.GetIdx() for _ in []]
-        pass
-    
-    return info
-
-
-
-#%% Input
+#%% Functions
 
 def GetInputParams(path):
     '''
@@ -198,33 +126,6 @@ def PrepareRun(path):
     
     
     return
-
-
-
-#%% Main function
-
-def main():
-    '''
-    Main function of the command-line tool
-    '''
-    # get script params
-    
-    
-    # get input
-    # info = ParseInput(path)
-    # info = SanitizeInput(info)
-    
-    
-    
-    return
-
-
-
-#%% Main code
-
-if __name__ == '__main__':
-    
-    main()
 
 
 
