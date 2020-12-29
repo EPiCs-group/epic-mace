@@ -8,6 +8,7 @@ geometries
 
 # TODO: add charge to properties
 # TODO: AddBondedLigand: add stereo_dummy flag
+# TODO: add MolToSmiles (no need to import RDKit)
 
 
 #%% Optional improvements

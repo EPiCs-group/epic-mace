@@ -25,14 +25,14 @@ def GetAliasFiles():
     # add wd and internal and script's paths
     dirs = [('wd', os.getcwd())] + dirs + [('mace', PATH_MACE)]
     # check files existence
-    path_Rs, path_ligands = None, None
-    for path_dir in dirs:
-        if not path_Rs and os.path.isfile(os.path.join(path_dir, 'Rs.txt')):
-            path_Rs = os.path.join(path_dir, 'Rs.txt')
-        if not path_ligands and os.path.isfile(os.path.join(path_dir, 'ligands.txt')):
-            path_ligands = os.path.join(path_dir, 'ligands.txt')
+    Rs, ligands = None, None
+    for flag, path_dir in dirs:
+        if Rs is None and os.path.isfile(os.path.join(path_dir, 'Rs.txt')):
+            Rs = (flag, os.path.join(path_dir, 'Rs.txt'))
+        if ligands is None and os.path.isfile(os.path.join(path_dir, 'ligands.txt')):
+            ligands = (flag, os.path.join(path_dir, 'ligands.txt'))
     
-    return path_Rs, path_ligands
+    return Rs, ligands
 
 
 def ReadParamFile(path):
@@ -90,8 +90,9 @@ def GetLigands(path_ligands):
         mol = MolFromSmiles(smiles)
         if not mol:
             raise ValueError(f'Bad ligand aliases file format: SMILES of {name} is not readable: {smiles}')
-        DAs = [_.GetIdx() for _ in []]
-        pass
+        DAs = [_.GetIdx() for _ in mol.GetAtoms()]
+        if not DAs:
+            raise ValueError(f'Bad ligands aliases file format: SMILES of {name} must countain at least one donor atom')
     
     return info
 
@@ -100,13 +101,16 @@ def GetAliases():
     '''
     Return dictionaries containing info on aliases
     '''
-    path_Rs, path_ligands = GetAliasFiles()
-    if not path_Rs:
-        pass
-    if not path_ligands:
+    Rs, ligands = GetAliasFiles()
+    if Rs is None:
+        print(f'Warning: Rs aliases file was not found anywhere')
+    else:
+        Rs = GetRs(Rs[1])
+        print(f'Rs')
+    if ligands is None:
         pass
     
-    return GetRs(path_Rs), GetLigands(path_ligands)
+    return Rs, ligands
 
 
 
