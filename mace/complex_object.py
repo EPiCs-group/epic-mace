@@ -4,30 +4,6 @@ stereoisomers and 3D coordinates. Supports square planar and octahedral
 geometries
 '''
 
-#%% Must DOs:
-
-# TODO: rewrite 3D embedding by manually changing distance matrix
-# TODO: add 3D generation from the most common substructure
-# TODO: add ToMOL method and ComplexFromMolFile functions
-# TODO: add ComplexFromMolFile functions
-# TODO: add charge to properties
-# TODO: AddBondedLigand: add stereo_dummy flag
-# TODO: add MolToSmiles (no need to import RDKit)
-
-
-#%% Optional improvements
-
-# TODO: Na, Ca, Al, etc as CA - fix RDKit problem with dative bonds
-# TODO: dummy as CA - substitute for any atom before embedding
-# TODO: check double bond stereo in AddConstrainedConformer
-# TODO: move resonance and mer-k from initialization to stereomer generation - seems not useful
-# TODO: enantiomers: set of unique structures must have same stereo for CA
-# TODO: GetEnantiomer() method
-# TODO: support of other geometries (tri-/pentagonal pyramid, etc)
-# TODO: improved search for stereo centers
-# TODO: Open SMILES support
-
-
 #%% Imports
 
 import json
@@ -50,10 +26,6 @@ class Complex():
     Wrapper around RDKit Mol object for mononuclear complexes
     '''
     
-    ##########################
-    # Force Field parameters #
-    ##########################
-    
     # object internal parameters
     _FFParams = params.FFParams
     _Rcov = params.Rcov
@@ -66,9 +38,7 @@ class Complex():
     _Angles = params.Angles
     
     
-    #############################################
-    # Initialization and graph-based comparison #
-    #############################################
+#%% Initialization
     
     def _CheckMol(self):
         # find and check dative bonds
@@ -271,9 +241,7 @@ class Complex():
         return bool(self._ID.intersection(X._eID))
     
     
-    #####################
-    # Stereomers search #
-    #####################
+#%% Stereomers search
     
     def _FindNeighboringDAs(self, minTransCycle = None):
         '''
@@ -485,10 +453,7 @@ class Complex():
         return stereomers    
     
     
-    
-    #################
-    # 3D Generation #
-    #################
+#%% 3D Generation
     
     def _SetEmbedding(self):
         '''
@@ -891,6 +856,8 @@ class Complex():
         return flag
     
     
+#%% 3D support methods
+    
     def GetNumConformers(self):
         '''
         Returns number of conformers
@@ -987,9 +954,7 @@ class Complex():
         return flags
     
     
-    ######################
-    # MolSimplify helper #
-    ######################
+#%% MolSimplify helper
     
     def GetBondedLigand(self, num):
         '''
@@ -1029,9 +994,7 @@ class Complex():
         return mol
     
     
-    ##########
-    # Output #
-    ##########
+#%% Output
     
     def _ConfToXYZ(self, confId):
         '''
