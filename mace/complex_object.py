@@ -13,6 +13,7 @@ from itertools import product, combinations
 from rdkit import Chem
 from rdkit.Chem import AllChem
 #from rdkit.Geometry.rdGeometry import Point3D
+import rdkit.Chem.rdDistGeom as rdDG
 
 from smiles_parsing import MolFromSmiles
 from parameters import params
@@ -31,6 +32,7 @@ class Complex():
     _Rcov = params.Rcov
     _Syms = params.Syms
     _Geoms = params.Geoms
+    _Bounds = params.Bounds
     _PosVs = params.PosVs
     _MinVs = params.MinVs
     _EqOrs = params.EqOrs
@@ -464,11 +466,11 @@ class Complex():
         must = set([idx for idx in self._Geoms[self._geom] if str(idx).isdigit()])
         have = set([num for num in self._DAs.values()])
         add += list(must.difference(have))
-        # basic coordMap
+        # prepare coordMap
         self._coordMap = {self._idx_CA: self._Geoms[self._geom]['CA']}
         for idx, num in self._DAs.items():
             self._coordMap[idx] = self._Geoms[self._geom][num]
-        # add dummies-helpers and their coords
+        # add dummies-helpers to mol3Dx and coordMap
         self._dummies = {}
         ed = Chem.EditableMol(self.mol3D)
         for num in add:
@@ -476,9 +478,18 @@ class Complex():
             ed.AddBond(idx, self._idx_CA, Chem.BondType.DATIVE)
             self._dummies[idx] = num
             self._coordMap[idx] = self._Geoms[self._geom][num]
-        # final
         self.mol3Dx = ed.GetMol()
         Chem.SanitizeMol(self.mol3Dx)
+        # prepare bounds matrix
+        X = rdDG.GetMoleculeBoundsMatrix(self.mol3Dx)
+        CS = [(self._idx_CA, 'CA')] + list(self._DAs.items()) + list(self._dummies.items())
+        for (i, num1), (j, num2) in combinations(CS, r = 2):
+            dmax = self._Bounds[self._geom][num1][num2]
+            dmin = self._Bounds[self._geom][num2][num1]
+            X[min(i,j)][max(i,j)] = max(dmin, dmax)
+            X[max(i,j)][min(i,j)] = min(dmin, dmax)
+        self._boundsMatrix = X
+        # final
         self._embedding_prepared = True
     
     
@@ -663,7 +674,7 @@ class Complex():
         return flag
     
     
-    def AddConformer(self, clearConfs = True, maxAttempts = 10):
+    def AddConformer(self, clearConfs = True, useRandomCoords = True, maxAttempts = 10):
         '''
         Generates complex conformer using constrained embedding
         '''
@@ -673,12 +684,18 @@ class Complex():
         attempt = maxAttempts
         while flag == -1 and attempt > 0:
             attempt -= 1
-            # embedding
+            # check embedding prerequisites
             if not self._embedding_prepared:
                 self._SetEmbedding()
-            flag = AllChem.EmbedMolecule(self.mol3Dx, coordMap = self._coordMap,
-                                         clearConfs = clearConfs,
-                                         enforceChirality = True)
+            # set embedding parameters
+            params = rdDG.EmbedParameters()
+            params.clearConfs = clearConfs
+            params.enforceChirality = True
+            params.useRandomCoords = useRandomCoords
+            #params.embedFragmentsSeparately = False
+            params.SetBoundsMat(self._boundsMatrix)
+            # embedding
+            flag = AllChem.EmbedMolecule(self.mol3Dx, params)
             if flag == -1:
                 continue
             # optimization # HINT: do not use self.Optimize as we need to apply self._CheckStereoCA after
@@ -726,7 +743,8 @@ class Complex():
     
     
     def AddConstrainedConformer(self, core, confId = 0, ignoreHs = True,
-                                      clearConfs = True, maxAttempts = 10):
+                                      clearConfs = True, useRandomCoords = True,
+                                      maxAttempts = 10):
         '''
         Constrained embedding using other complex geometry
         Core complex must be a substructure of complex and
@@ -804,6 +822,7 @@ class Complex():
             attempt -= 1
             flag = AllChem.EmbedMolecule(self.mol3Dx, coordMap = coordMap,
                                          clearConfs = clearConfs,
+                                         useRandomCoords = useRandomCoords,
                                          enforceChirality = True)
             if flag == -1:
                 continue
@@ -884,7 +903,8 @@ class Complex():
         self.mol3Dx.RemoveAllConformers()
     
     
-    def AddConformers(self, numConfs = 10, clearConfs = True, maxAttempts = 10, rmsThresh = -1):
+    def AddConformers(self, numConfs = 10, clearConfs = True, useRandomCoords = True,
+                      maxAttempts = 10, rmsThresh = -1):
         '''
         Generates several conformers
         '''
@@ -895,6 +915,7 @@ class Complex():
         for i in range(numConfs):
             clearConfsIter = False if flags else clearConfs
             flag = self.AddConformer(clearConfs = clearConfsIter,
+                                     useRandomCoords = useRandomCoords,
                                      maxAttempts = maxAttempts)
             # check flag and rms
             if flag == -1:
@@ -919,7 +940,8 @@ class Complex():
     
     
     def AddConstrainedConformers(self, core, confId = 0, ignoreHs = True, numConfs = 10,
-                                 clearConfs = True, maxAttempts = 10, rmsThresh = -1):
+                                 clearConfs = True, useRandomCoords = True,
+                                 maxAttempts = 10, rmsThresh = -1):
         '''
         Generates several conformers
         '''
@@ -931,6 +953,7 @@ class Complex():
             clearConfsIter = False if flags else clearConfs
             flag = self.AddConstrainedConformer(core, confId = confId, ignoreHs = ignoreHs,
                                                 clearConfs = clearConfsIter,
+                                                useRandomCoords = useRandomCoords,
                                                 maxAttempts = maxAttempts)
             # check flag and rms
             if flag == -1:

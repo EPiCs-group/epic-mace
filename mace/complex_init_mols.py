@@ -7,7 +7,7 @@ Functions for SMILES parsing
 from rdkit import Chem
 
 from smiles_parsing import MolFromSmiles
-from Complex import Complex
+from complex_object import Complex
 
 
 #%% Functions

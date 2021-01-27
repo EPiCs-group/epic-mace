@@ -3,8 +3,10 @@ Internal parameters of Complex object
 '''
 
 #%% Imports
-from collections import namedtuple
+
+from itertools import combinations
 from copy import deepcopy
+from collections import namedtuple
 
 from rdkit.Geometry.rdGeometry import Point3D
 
@@ -12,8 +14,8 @@ from rdkit.Geometry.rdGeometry import Point3D
 #%% Params object
 
 params = namedtuple('ComplexParams', ['FFParams', 'Rcov', 'Syms', 'Geoms',
-                                      'PosVs', 'MinVs', 'EqOrs', 'Nears',
-                                      'Angles'])
+                                      'Bounds', 'PosVs', 'MinVs', 'EqOrs',
+                                      'Nears', 'Angles'])
 
 # force field parameters
 params.FFParams = {'X*'     :    2.0,
@@ -40,11 +42,7 @@ params.Rcov = [0.23,0.23,1.5,1.28,0.96,0.83,0.68,0.68,0.68,0.64,1.5,1.66,1.41,1.
                1.45,1.46,1.48,1.4,1.21,1.5,2.6,2.21,2.15,2.06,2,1.96,1.9,1.87,1.8,1.69,1.54,
                1.83,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5]
 params.Rcov = {i: rcov for i, rcov in enumerate(params.Rcov)}
-    
-    
-############################
-# Basic Complex Parameters #
-############################
+
 
 # SMILES symmetry codes for octahedral geometry @OH1-@OH30
 # see OpenSMILES specification for the details
@@ -69,12 +67,51 @@ params.Geoms = {'OH': {'CA': Point3D( 0.0, 0.0, 0.0),
                           5: Point3D( 0.0,-2.0, 0.0),
                           6: Point3D( 0.0, 0.0,-2.0)},
                 'SP': {'CA': Point3D( 0.0, 0.0, 0.0),
+                       'X1': Point3D( 0.0, 0.0, 2.0),
                           1: Point3D( 2.0, 0.0, 0.0),
                           2: Point3D( 0.0, 2.0, 0.0),
                           3: Point3D(-2.0, 0.0, 0.0),
                           4: Point3D( 0.0,-2.0, 0.0),
-                       'X1': Point3D( 0.0, 0.0, 2.0),
                        'X2': Point3D( 0.0, 0.0,-2.0)}}
+
+# Bounds matrixes
+# params for OH and SP
+r = 2.0
+dr = 0.1
+r_max = r + dr # CA-L
+r_min = r - dr
+r_e_max = 2*r_max # L1..L2, L1-CA-L2 = 180
+r_e_min = 2*r_min
+r_z_max = 2**0.5 * r_max # L1..L2, L1-CA-L2 = 90
+r_z_min = 2**0.5 * r_min
+      # CA  # 1 / X1 # 2      # 3      # 4      # 5      # 6 / X2
+X = [[  0.0,   r_max,   r_max,   r_max,   r_max,   r_max,   r_max], # CA
+     [r_min,     0.0, r_z_max, r_z_max, r_z_max, r_z_max, r_e_max], # 1 / X1
+     [r_min, r_z_min,     0.0, r_z_max, r_e_max, r_z_max, r_z_max], # 2
+     [r_min, r_z_min, r_z_min,     0.0, r_z_max, r_e_max, r_z_max], # 3
+     [r_min, r_z_min, r_e_min, r_z_min,     0.0, r_z_max, r_z_max], # 4
+     [r_min, r_z_min, r_z_min, r_e_min, r_z_min,     0.0, r_z_max], # 5
+     [r_min, r_e_min, r_z_min, r_z_min, r_z_min, r_z_min,     0.0]] # 6 / X2
+# prepare OH
+labs = ['CA', 1, 2, 3, 4, 5, 6]
+OH = {lab1: {lab2: 0.0 for lab2 in labs} for lab1 in labs}
+for (i, lab1), (j, lab2) in combinations(enumerate(labs), r = 2):
+    if i > j:
+        i, j = j, i
+        lab1, lab2 = lab2, lab1
+    OH[lab1][lab2] = X[i][j]
+    OH[lab2][lab1] = X[j][i]
+# prepare SP
+labs = ['CA', 'X1', 1, 2, 3, 4, 'X2']
+SP = {lab1: {lab2: 0.0 for lab2 in labs} for lab1 in labs}
+for (i, lab1), (j, lab2) in combinations(enumerate(labs), r = 2):
+    if i > j:
+        i, j = j, i
+        lab1, lab2 = lab2, lab1
+    SP[lab1][lab2] = X[i][j]
+    SP[lab2][lab1] = X[j][i]
+# add to params
+params.Bounds = {'OH': OH, 'SP': SP}
 
 # lists of points corresponding to positive tetrahedra volumes
 params.PosVs = {'OH': [['CA',1,2,3],
@@ -112,7 +149,7 @@ params.EqOrs = {'OH': {1: [1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6],
 params.EqOrs['enantOH'] = deepcopy(params.EqOrs['OH'])
 params.EqOrs['enantOH'][1] = deepcopy(params.EqOrs['OH'][6])
 params.EqOrs['enantOH'][6] = deepcopy(params.EqOrs['OH'][1])
-    
+
 # neigboring ligands positions
 params.Nears = {'OH': {1: [2,3,4,5],
                        2: [1,3,6,5],
