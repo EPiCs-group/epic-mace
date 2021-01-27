@@ -1060,19 +1060,22 @@ class Complex():
             p = conf3Dx.GetAtomPosition(i)
             dummies += [p.x, p.y, p.z]
         # make text
-        info = {'conf': confId, 'E': float(f'{E:.2f}'), 'rms': float(f'{rms:.4f}'),
-                'geom': self._geom, 'smiles': smiles, 'smiles3D': smiles3D,
+        info = {'conf': confId, 'E': float(f'{E:.2f}'),
+                'rms': float(f'{rms:.4f}'), 'geom': self._geom,
+                'total_charge': sum([a.GetFormalCharge() for a in self.mol.GetAtoms()]),
+                'CA_charge': self.mol.GetAtomWithIdx(self._idx_CA).GetFormalCharge(),
+                'smiles': smiles, 'smiles3D': smiles3D,
                 'smiles3Dx': smiles3Dx, 'dummies': dummies}
         text = [str(len(xyz)), json.dumps(info)] + xyz
         
         return '\n'.join(text)+'\n'
     
     
-    def ToXYZBlock(self, confId = -2):
+    def ToXYZBlock(self, confId = 'all'):
         '''
         Returns XYZ as text block
-        If confId is -1 or "min", conformer with the lowest energy will be saved
-        If confId is -2 or "all", all conformers will be saved
+        If confId is 'min' or -1, conformer with the lowest energy will be saved
+        If confId is 'all' or -2, all conformers will be saved
         '''
         if self._PrintErrorInit():
             return None
@@ -1102,8 +1105,8 @@ class Complex():
     def ToXYZ(self, path, confId = -2):
         '''
         Saves found conformers in XYZ format
-        If confId is -1 or "min", conformer with the lowest energy will be saved
-        If confId is -2 or "all", all conformers will be saved
+        If confId is 'min' or -1, conformer with the lowest energy will be saved
+        If confId is 'all' or -2, all conformers will be saved
         '''
         text = self.ToXYZBlock(confId)
         with open(path, 'w') as outf:

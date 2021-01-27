@@ -1,15 +1,20 @@
 '''
-MACE demonstration
+MACE demonstration - not needed, rework to README
 '''
+
+#%% Imports
 
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import mace
 
 
-#%% Params
+#%% Paths
 
-path_dir = 'C:/Users/ivan-/Desktop'
+# root
+if not os.path.isdir('outputs/demo'):
+    os.mkdir('outputs/demo')
+path_dir = 'outputs/demo'
 
 
 #%% Stereo
@@ -20,7 +25,7 @@ X = mace.Complex(smiles, geom)
 Xs = X.GetStereomers()
 for i, x in enumerate(Xs):
     x.AddConformer()
-    x.ToXYZ(f'{path_dir}/x_{i}.xyz')
+    x.ToXYZ(f'{path_dir}/demo_stereo_{i}.xyz')
 
 
 #%% 3D from ChemAxon Marvin SMILES
@@ -29,7 +34,7 @@ smiles = '[Co+3]([NH3:4])([NH3:5])([NH3:3])([F-:1])([F-:6])[F-:2] |C:4.3,5.4,1.0
 geom = 'OH'
 X = mace.Complex(smiles, geom)
 X.AddConformer()
-X.ToXYZ(f'{path_dir}/x.xyz')
+X.ToXYZ(f'{path_dir}/demo_chem_axon.xyz')
 
 
 #%% 3D from ligands
@@ -42,7 +47,7 @@ smiles = '[Ru++]12([C-:4]3=[N+](CC[NH:3]1CC[P:2]2(C)C)C=CN3C)([C-:6]#[O+])([H-:1
 #X = mace.ComplexFromLigands(ligands, CA, geom)
 X = mace.Complex(smiles, geom)
 X.AddConformers(numConfs = 5, rmsThresh = 2.0)
-X.ToXYZ(f'{path_dir}/x.xyz')
+X.ToXYZ(f'{path_dir}/demo_from_ligands.xyz')
 
 
 #%% Substituents support
@@ -53,6 +58,8 @@ subs = {'R1': '[*]C', 'R2': '[*]N(=O)=O'}
 mol = mace.AddSubsToMol(mol, subs)
 geom = 'OH'
 X = mace.ComplexFromMol(mol, geom)
+X.AddConformers(numConfs = 5, rmsThresh = 2.0)
+X.ToXYZ(f'{path_dir}/demo_subs.xyz')
 
 
 #%% Constrained embedding
@@ -61,12 +68,12 @@ smiles = '[Co+3]([NH3:4])([NH3:5])([NH3:3])([F-:1])([F-:6])[F-:2] |C:4.3,5.4,1.0
 geom = 'OH'
 X = mace.Complex(smiles, geom)
 X.AddConformer()
-X.ToXYZ(f'{path_dir}/x.xyz')
+X.ToXYZ(f'{path_dir}/demo_constrained_dummy.xyz')
 
 smiles = '[N:5]([Co+3]([NH3:4])([NH3:3])([F-:1])([F-:6])[F-:2])(C)(C)C |C:2.1,0.0,3.2,4.3,5.4,6.5|'
 geom = 'OH'
 X = mace.Complex(smiles, geom)
 X.AddConstrainedConformerFromXYZ(pathCore = f'{path_dir}/x.xyz', ignoreHs = False)
-X.ToXYZ(f'{path_dir}/y.xyz')
+X.ToXYZ(f'{path_dir}/demo_constrained_final.xyz')
 
 
