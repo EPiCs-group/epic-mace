@@ -26,7 +26,7 @@ This section briefly describes the main possibilities of the package. For more d
 
 First, you need to initialize the complex. The easiest way to do it is to draw the complex in Marvin Sketch and copy its ChemAxon SMILES:
 
-<img src="manual/pics/README/marvin_copy_smiles.png" style="zoom:50%;" />
+<img src="manual/pics/README/marvin_copy_smiles.png" width="50%" />
 
 Bonds between donor atoms and the central ion must be encoded as dative bonds. Atomic map numbers (blue numbers close to donor atoms) are used to describe the spatial arrangement of ligands.
 
@@ -42,7 +42,7 @@ X = mace.Complex(smiles, geom)
 X.mol
 ```
 
-<img src="manual/pics/README/X1.png" style="zoom:50%;" />
+<img src="manual/pics/README/X1.png" width="40%" />
 
 To generate atomic coordinates, use `AddConformer` or `AddConformers` methods:
 
@@ -53,7 +53,7 @@ X.ToXYZ('test.xyz', confId = 'all')
 
 Here's the result:
 
-<img src="manual/pics/README/X1_3D.png" style="zoom:25%;" />
+<img src="manual/pics/README/X1_3D.png" width="50%"/>
 
 ### Search of stereomers
 
@@ -107,6 +107,8 @@ for i, X in enumerate(Xs):
 Here's the result (aliphatic hydrogens removed for clarity):
 
 ![](manual/pics/README/X1s_3D.png)
+
+
 
 ### Introduction of substituents
 
