@@ -1,6 +1,6 @@
 # MACE: MetAl Complexes Embedding
 
-Python library and command-line tool for generation of 3D coordinates for complexes of d-/f-elements.
+Python library (*beta*) and command-line tool (*under development*) for generation of 3D coordinates for complexes of d-/f-elements.
 
 ## Installation
 
@@ -8,14 +8,14 @@ Create new conda environment with [RDKit](http://anaconda.org/rdkit/rdkit) 2020.
 
 ```
 > conda create -n mace
-> conda install -c rdkit rdkit=2020.09.1
+> conda install -c rdkit rdkit
 ```
 
-Next, activate the environment and install [epic-mace](https://pypi.org/project/epic-mace/0.2/) package using pip:
+Next, activate the environment and install [epic-mace](https://pypi.org/project/epic-mace/) package using pip:
 
 ```
 > conda activate mace
-> pip install mace=0.2
+> pip install epic-mace
 ```
 
 ## CookBook
@@ -148,7 +148,7 @@ L
 Next we initialize new complex:
 
 ```python
-ligands = [Chem.MolToSmiles(L), '[Cl-:4]']
+ligands = [mace.MolToSmiles(L), '[Cl-:4]']
 CA = '[Rh+]'
 geom = 'SP'
 X = mace.ComplexFromLigands(ligands, CA, geom)
