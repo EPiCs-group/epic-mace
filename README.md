@@ -11,20 +11,20 @@ Create new conda environment with [RDKit](http://anaconda.org/rdkit/rdkit) 2020.
 > conda install -c rdkit rdkit=2020.09.1
 ```
 
-Next activate the environment install mace package using pip:
+Next, activate the environment and install [epic-mace](https://pypi.org/project/epic-mace/0.2/) package using pip:
 
 ```
 > conda activate mace
 > pip install mace=0.2
 ```
 
-## Short How-To
+## CookBook
 
 This section briefly describes the main possibilities of the package. For more details and usage cases see the [manual](manual/manual.md) (under development).
 
 ### Generate 3D coordinates for the complex
 
-First, you need to initialize the complex. The easiest way to do it is to draw the complex in Marvin Sketch and copy its ChemAxon SMILES:
+First, you need to initialize the complex. The easiest way to do it is to draw the complex in [Marvin Sketch](https://chemaxon.com/products/marvin) and copy its [ChemAxon SMILES](https://docs.chemaxon.com/display/docs/smiles.md):
 
 <img src="manual/pics/README/marvin_copy_smiles.png" width="50%" />
 
@@ -106,10 +106,64 @@ for i, X in enumerate(Xs):
 
 Here's the result (aliphatic hydrogens removed for clarity):
 
-![](manual/pics/README/X1s_3D.png)
-
-
+<img src="manual/pics/README/X1s_3D.png" width="100%"/>
 
 ### Introduction of substituents
 
-...
+Imagine, that you need to generate a lot of complexes with the same core and different substituents. Generation of all structures will result in serious time loss due to the QM geometry optimization. There are more tricky way. First, you need to generate atomic coordinates for the core (most simple) structure:
+
+```python
+import mace
+
+# core
+ligands = ['C[P:3](C)CC1=CC=CC(C[P:1](C)C)=[N:2]1 |c:6,12|', '[Cl-:4]']
+CA = '[Rh+]'
+geom = 'SP'
+core = mace.ComplexFromLigands(ligands, CA, geom)
+
+# 3D embedding
+core.AddConformer()
+core.ToXYZ('core.xyz', confId = 'min')
+```
+
+Next, we need to generate a derivative of the core structure using `mace.AddSubsToMol` function. This function takes as input the core molecule (RDKit Mol object) and the dictionary of substituents (also RDKit Mol objects). The core molecule must contain dummy atoms with isotopic labels equal to the number of substituent (can be encoded as *R1*, *R2*, etc. in Marvin Sketch):
+
+<img src="manual/pics/README/subs.png" width="50%"/>
+
+Keys in substituents dictionary must be encoded as `'R1'`, where number after ***R*** letter denotes substituent's number. RDKit Mol objects corresponding to the substituents must contain exactly one dummy atom. The `mace.AddSubsToMol` function removes dummies and connects the core with the substituents:
+
+```python
+# main ligand
+L = mace.MolFromSmiles('C[P:3](C)CC1=CC([*])=C([*])C(C[P:1](C)C)=[N:2]1 |$;;;;;;;_R1;;_R2;;;;;;$,c:14,t:4,7|')
+# substituents
+subs = {'R1': mace.MolFromSmiles('[*]OC'),
+        'R2': mace.MolFromSmiles('[*]C#N')}
+# add subs
+L = mace.AddSubsToMol(L, subs)
+L
+```
+
+<img src="manual/pics/README/subst_ligand.png" width="50%"/>
+
+Next we initialize new complex:
+
+```python
+ligands = [Chem.MolToSmiles(L), '[Cl-:4]']
+CA = '[Rh+]'
+geom = 'SP'
+X = mace.ComplexFromLigands(ligands, CA, geom)
+```
+
+And generate atomic coordinates using constrained embedding:
+
+```python
+conf_idx = X.AddConstrainedConformer(core, confId = 0)
+X.ToXYZ('X.xyz', confId = 'min')
+```
+
+`core` must be a substructure of `X`, and the number of donor atoms in `core` and `X` must be equal. In that case we'll obtain atomic coordinates, and the positions of matched atoms will be almost the same as those of a template molecule:
+
+<img src="manual/pics/README/X_and_core.png" width="80%"/>
+
+This method can be easily used to generate a big set of related complexes, which may be useful for QSAR research.
+

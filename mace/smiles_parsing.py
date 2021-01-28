@@ -232,4 +232,11 @@ def MolFromSmiles(smiles):
     return Chem.RemoveHs(mol)
 
 
+def MolToSmiles(mol):
+    '''
+    Anti-RDKit plug
+    '''
+    
+    return Chem.MolToSmiles(mol)
+
 

@@ -23,6 +23,7 @@ def ComplexFromMol(mol, geom, maxResonanceStructures = 1):
     X.mol = mol
     X._CheckMol()
     X._SetComparison()
+    X.mol3D = Chem.AddHs(X.mol)
     X._embedding_prepared = False
     X._ff_prepared = False
     
