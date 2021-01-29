@@ -57,16 +57,16 @@ if __name__ == '__main__':
     
     # SP
     for n, name, smiles in ls['SP']:
-        systems.append( (name, n, [smiles], sp_params, 'SP') )
-        systems.append( (name, n, [smiles] + [auxs['H']]*(4-n), sp_params, 'SP_H') )
-        systems.append( (name, n, [smiles] + [auxs['Cl']]*(4-n), sp_params, 'SP_Cl') )
+        # systems.append( (name, n, [smiles], sp_params, 'SP') )
+        # systems.append( (name, n, [smiles] + [auxs['H']]*(4-n), sp_params, 'SP_H') )
+        # systems.append( (name, n, [smiles] + [auxs['Cl']]*(4-n), sp_params, 'SP_Cl') )
         systems.append( (name, n, [smiles] + [auxs['CO']]*(4-n), sp_params, 'SP_CO') )
     
     # OH
     for n, name, smiles in ls['OH']:
-        systems.append( (name, n, [smiles], oh_params, 'OH') )
-        systems.append( (name, n, [smiles] + [auxs['H']]*(6-n), oh_params, 'OH_H') )
-        systems.append( (name, n, [smiles] + [auxs['Cl']]*(6-n), oh_params, 'OH_Cl') )
+        # systems.append( (name, n, [smiles], oh_params, 'OH') )
+        # systems.append( (name, n, [smiles] + [auxs['H']]*(6-n), oh_params, 'OH_H') )
+        # systems.append( (name, n, [smiles] + [auxs['Cl']]*(6-n), oh_params, 'OH_Cl') )
         systems.append( (name, n, [smiles] + [auxs['CO']]*(6-n), oh_params, 'OH_CO') )
     
     # check subdirs
