@@ -4,11 +4,9 @@ Tests MACE code
 
 #%% Imports
 
-import sys, os, time
+import os, time
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../mace')))
-from Complex import ComplexFromLigands
-# from mace import ComplexFromLigands
+from mace import ComplexFromLigands
 
 
 #%% Functions
@@ -36,9 +34,8 @@ def read_ligands(path):
 #%% Read ligands
 
 # paths
-path_dir = os.path.dirname(__file__)
-path_ls = os.path.join(path_dir, 'ligands/cleared_ligands/csd_ligands.csv')
-path_xyz = os.path.join(path_dir, 'outputs/brute_xyz')
+path_ls = 'ligands/cleared_ligands/csd_ligands.csv'
+path_xyz = 'outputs/brute_xyz'
 
 # ligands
 ls = read_ligands(path_ls)
@@ -60,16 +57,16 @@ if __name__ == '__main__':
     
     # SP
     for n, name, smiles in ls['SP']:
-        systems.append( (name, n, [smiles], sp_params, 'SP') )
-        systems.append( (name, n, [smiles] + [auxs['H']]*(4-n), sp_params, 'SP_H') )
-        systems.append( (name, n, [smiles] + [auxs['Cl']]*(4-n), sp_params, 'SP_Cl') )
+        # systems.append( (name, n, [smiles], sp_params, 'SP') )
+        # systems.append( (name, n, [smiles] + [auxs['H']]*(4-n), sp_params, 'SP_H') )
+        # systems.append( (name, n, [smiles] + [auxs['Cl']]*(4-n), sp_params, 'SP_Cl') )
         systems.append( (name, n, [smiles] + [auxs['CO']]*(4-n), sp_params, 'SP_CO') )
     
     # OH
     for n, name, smiles in ls['OH']:
-        systems.append( (name, n, [smiles], oh_params, 'OH') )
-        systems.append( (name, n, [smiles] + [auxs['H']]*(6-n), oh_params, 'OH_H') )
-        systems.append( (name, n, [smiles] + [auxs['Cl']]*(6-n), oh_params, 'OH_Cl') )
+        # systems.append( (name, n, [smiles], oh_params, 'OH') )
+        # systems.append( (name, n, [smiles] + [auxs['H']]*(6-n), oh_params, 'OH_H') )
+        # systems.append( (name, n, [smiles] + [auxs['Cl']]*(6-n), oh_params, 'OH_Cl') )
         systems.append( (name, n, [smiles] + [auxs['CO']]*(6-n), oh_params, 'OH_CO') )
     
     # check subdirs
