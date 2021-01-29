@@ -1,1 +1,0 @@
-[4H-]->[Mn+]12(<-[3C-]#[O+])(<-[6C-]#[O+])<-[2N@H](CC[1P]->1(c1ccccc1)c1ccccc1)CC[5P]->2(c1ccccc1)c1ccccc1
