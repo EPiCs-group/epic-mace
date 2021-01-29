@@ -4,19 +4,25 @@ Python library (*beta*) and command-line tool (*under development*) for generati
 
 ## Installation
 
-Create new conda environment with [RDKit](http://anaconda.org/rdkit/rdkit) 2020.03.1 or later:
+MACE can be easily installed with conda package manager:
 
 ```
 > conda create -n mace
-> conda install -c rdkit rdkit
-```
-
-Next, activate the environment and install [epic-mace](https://pypi.org/project/epic-mace/) package using pip:
-
-```
 > conda activate mace
+> conda install -c epics.group epic-mace
+```
+
+You can also use pip, but in this case [RDKit](https://www.rdkit.org/) 2020.03 or later must be already installed, e.g. using conda:
+
+```
+> conda create -n mace
+> conda activate mace
+> conda install -c rdkit rdkit=2020.09
+> conda install pip
 > pip install epic-mace
 ```
+
+Such scenario may be useful if there are some problems with compatibility of libraries during direct conda installation.
 
 ## CookBook
 

@@ -1,0 +1,40 @@
+{% set name = "epic-mace" %}
+{% set version = "0.3.3" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: https://files.pythonhosted.org/packages/73/33/72d783310b6f74752f695dc3b2736e95ba0eecf66d0d7cf2c55cfea7b08e/epic_mace-0.3.3.tar.gz
+  sha256: c4bdcc65a0f2385bf3d115f6b07e0ce6dc01c4e6ad7eb560f709df4dde0b42a9
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - pip
+    - python
+    - rdkit >=2020.09
+  run:
+    - python >=3.7
+    - rdkit >=2020.09
+
+test:
+  imports:
+    - mace
+
+about:
+  home: "http://github.com/EPiCs-group/mace"
+  license: "GNU General Public v3 or later (GPLv3+)"
+  license_family: GPL3
+  license_file: 
+  summary: "Python library and command-line tool for generation of 3D coordinates for complexes of d-/f-elements"
+  doc_url: 
+  dev_url: 
+
+extra:
+  recipe-maintainers:
+    - 17598902

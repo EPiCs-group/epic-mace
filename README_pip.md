@@ -11,13 +11,14 @@ Create new conda environment with [RDKit](http://anaconda.org/rdkit/rdkit) 2020.
 
 ```
 > conda create -n mace
+> conda activate mace
 > conda install -c rdkit rdkit=2020.09.1
 ```
 
-Next, activate the environment and install [epic-mace](https://pypi.org/project/epic-mace) package using pip:
+Next, install [epic-mace](https://pypi.org/project/epic-mace) package using pip:
 
 ```
-> conda activate mace
+> conda install pip
 > pip install epic-mace
 ```
 
