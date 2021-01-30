@@ -373,6 +373,16 @@ class Complex():
         else:
             idxs = [idx for idx, chi in Chem.FindMolChiralCenters(mol, includeUnassigned = True) if chi == '?']
             idxs = [idx for idx in idxs if idx != self._idx_CA]
+            # drop P/As with nH > 2 # HINT: remove after fixing RDKit #3773
+            drop = []
+            for idx in idxs:
+                a = mol.GetAtomWithIdx(idx)
+                if a.GetSymbol() not in ('P', 'As'):
+                    continue
+                nHs = a.GetNumExplicitHs() + len([_ for _ in a.GetNeighbors() if _.GetSymbol() == 'H'])
+                if nHs >= 2:
+                    drop.append(idx)
+            idxs = [_ for _ in idxs if _ not in drop]
             # generate all possible combinations of stereocentres
             mols = []
             for chis in product([Chem.ChiralType.CHI_TETRAHEDRAL_CCW, Chem.ChiralType.CHI_TETRAHEDRAL_CW], repeat = len(idxs)):
