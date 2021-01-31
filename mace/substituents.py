@@ -82,7 +82,7 @@ def AddSubsToMol(mol, Rs):
     # get number and type of Rs
     needed_Rs = []
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 0 and atom.GetIsotope():
+        if atom.GetAtomicNum() in (0, 1) and atom.GetIsotope() and not atom.GetAtomMapNum():
             if 'DATIVE' not in [str(_.GetBondType()) for _ in atom.GetBonds()]:
                 needed_Rs.append( (atom.GetIdx(), f'R{atom.GetIsotope()}') )
     # check Rs existence

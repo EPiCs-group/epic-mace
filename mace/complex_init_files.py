@@ -98,42 +98,62 @@ def _ReadXYZ(path):
         raise ValueError('Bad XYZ file: number of atoms in molecule and coordinates block do not match')
     if mol3Dx.GetNumAtoms() - mol3D.GetNumAtoms() != int(len(info0['dummies'])/3):
         raise ValueError('Bad XYZ file: bad number of atoms in mol3Dx')
-    # make mol and check mapping
+    # make mol
     maps = []
     for atom in mol.GetAtoms():
         maps.append(atom.GetAtomMapNum())
         atom.SetAtomMapNum(0)
     mol = Chem.RenumberAtoms(mol, tuple(zip(*sorted([(j, i) for i, j in enumerate(maps)])))[1])
+    # check mol mapping
     flag = False
     for atom in mol.GetAtoms():
-        if atom.GetSymbol() != atoms[atom.GetIdx()]:
+        sym = '*' if atoms[atom.GetIdx()] == 'X' else atoms[atom.GetIdx()]
+        if atom.GetSymbol() != sym:
             flag = True
             break
     if flag:
         raise ValueError('Bad XYZ file: atom numbering in SMILES and coordinates block do not match')
-    # make mol3D and check mapping
+    # restore DAs in mol
+    for a in mol.GetAtoms():
+        if not a.GetIsotope():
+            continue
+        if 'DATIVE' not in [str(b.GetBondType()) for b in a.GetBonds()]:
+            continue
+        a.SetAtomMapNum(a.GetIsotope())
+    # make mol3D
     maps3D = []
     for atom in mol3D.GetAtoms():
         maps3D.append(atom.GetAtomMapNum())
         atom.SetAtomMapNum(0)
     mol3D = Chem.RenumberAtoms(mol3D, tuple(zip(*sorted([(j, i) for i, j in enumerate(maps3D)])))[1])
+    # check mol3D mapping
     flag = False
     for atom in mol3D.GetAtoms():
-        if atom.GetSymbol() != atoms[atom.GetIdx()]:
+        sym = '*' if atoms[atom.GetIdx()] == 'X' else atoms[atom.GetIdx()]
+        if atom.GetSymbol() != sym:
             flag = True
             break
     if flag:
         raise ValueError('Bad XYZ file: atom numbering in SMILES3D and coordinates block do not match')
-    # make mol3Dx and check mapping
+    # restore DAs in mol3D
+    for a in mol3D.GetAtoms():
+        if not a.GetIsotope():
+            continue
+        if 'DATIVE' not in [str(b.GetBondType()) for b in a.GetBonds()]:
+            continue
+        a.SetAtomMapNum(a.GetIsotope())
+    # make mol3Dx
     maps3Dx = []
     for atom in mol3Dx.GetAtoms():
         maps3Dx.append(atom.GetAtomMapNum())
         atom.SetAtomMapNum(0)
     mol3Dx = Chem.RenumberAtoms(mol3Dx, tuple(zip(*sorted([(j, i) for i, j in enumerate(maps3Dx)])))[1])
+    # check mol3Dx mapping
     flag = False
     for atom in mol3Dx.GetAtoms():
         if atom.GetIdx() < mol3D.GetNumAtoms():
-            if atom.GetSymbol() != atoms[atom.GetIdx()]:
+            sym = '*' if atoms[atom.GetIdx()] == 'X' else atoms[atom.GetIdx()]
+            if atom.GetSymbol() != sym:
                 flag = True
                 break
         else:
@@ -142,6 +162,13 @@ def _ReadXYZ(path):
                 break
     if flag:
         raise ValueError('Bad XYZ file: atom numbering in SMILES3Dx and coordinates block do not match')
+    # restore DAs in mol3Dx
+    for a in mol3Dx.GetAtoms():
+        if not a.GetIsotope():
+            continue
+        if 'DATIVE' not in [str(b.GetBondType()) for b in a.GetBonds()]:
+            continue
+        a.SetAtomMapNum(a.GetIsotope())
     # final checks
     if Chem.MolToSmiles(mol, canonical = False) != Chem.MolToSmiles(Chem.RemoveHs(mol3D), canonical = False):
         raise ValueError('Bad XYZ file: SMILES and SMILES3D do not match')
@@ -168,8 +195,8 @@ def ComplexFromXYZFile(path):
         raise ValueError('Bad XYZ file: SMILES does not contain enough stereo information')
     # preset embedding
     X.mol3D = mol3D
-    X._SetEmbedding()
     X.mol3Dx = mol3Dx
+    X._SetEmbedding()
     # add conformers
     for info in infos:
         # add coords to mol
@@ -200,7 +227,5 @@ def ComplexFromXYZFile(path):
         X.mol3Dx.AddConformer(conf3Dx, assignId = True)
     
     return X
-
-
 
 

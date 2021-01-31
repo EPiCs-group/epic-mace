@@ -2,6 +2,13 @@
 Supporting functions for the Complex object
 '''
 
+#%% Imports
+
+from copy import deepcopy
+
+from rdkit import Chem
+
+
 #%% Functions
 
 def _CalcTHVolume(conf, idxs):
@@ -15,5 +22,19 @@ def _CalcTHVolume(conf, idxs):
     prod = [v1[1]*v2[2]-v1[2]*v2[1], v1[2]*v2[0]-v1[0]*v2[2], v1[0]*v2[1]-v1[1]*v2[0]]
     
     return sum([x*y for x, y in zip(prod, v3)])/6
+
+
+def _RemoveRs(mol):
+    '''
+    Transforms R atoms into implicit form
+    '''
+    mol = deepcopy(mol)
+    for a in mol.GetAtoms():
+        if a.GetSymbol() in ('*', 'H') and len(a.GetNeighbors()) == 1 and \
+           a.GetIsotope() and not a.GetAtomMapNum():
+            a.SetAtomicNum(1)
+            a.SetIsotope(0)
+    
+    return Chem.RemoveHs(mol)
 
 

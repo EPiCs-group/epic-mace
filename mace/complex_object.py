@@ -6,7 +6,7 @@ geometries
 
 #%% Imports
 
-import json
+import json, re
 from copy import deepcopy
 from itertools import product, combinations
 
@@ -17,7 +17,7 @@ import rdkit.Chem.rdDistGeom as rdDG
 
 from .smiles_parsing import MolFromSmiles
 from .parameters import params
-from .supporting_functions import _CalcTHVolume
+from .supporting_functions import _CalcTHVolume, _RemoveRs
 
 
 #%% Complex object
@@ -61,7 +61,7 @@ class Complex():
         if CA.GetNumImplicitHs() > 0:
             raise ValueError('Bad SMILES: all hydrogens (hydrides) bonded to central atom must be encoded explicitly with isotopic label')
         # check donor atoms labelling
-        self._DAs = {_[1].GetIdx(): _[1].GetIsotope() for _ in info}
+        self._DAs = {_[1].GetIdx(): _[1].GetAtomMapNum() for _ in info}
         labs = list(self._DAs.values())
         if len(labs) > len([_ for _ in self._Geoms[self._geom] if str(_).isdigit()]):
             raise ValueError('Bad SMILES: number of donor atoms exceeds maximal possible for given geometry')
@@ -95,8 +95,8 @@ class Complex():
         # C([O-]->[*])=O->[*] to [C+]([O-]->[*])-[O-]->[*]
         for i, j, k in mol_norm.GetSubstructMatches(Chem.MolFromSmarts('[O-]C=[O]')):
             # TODO: check bonding better
-            if mol_norm.GetAtomWithIdx(i).GetIsotope() and \
-               mol_norm.GetAtomWithIdx(k).GetIsotope():
+            if mol_norm.GetAtomWithIdx(i).GetAtomMapNum() and \
+               mol_norm.GetAtomWithIdx(k).GetAtomMapNum():
                 mol_norm.GetAtomWithIdx(j).SetFormalCharge(1)
                 mol_norm.GetAtomWithIdx(k).SetFormalCharge(-1)
                 mol_norm.GetBondBetweenAtoms(j, k).SetBondType(Chem.rdchem.BondType.SINGLE)
@@ -134,12 +134,14 @@ class Complex():
             EqOrsInv = self._EqOrs[self._geom]
         _ID = []
         _eID = []
-        _DAs = {_.GetIdx(): _.GetIsotope() for _ in mol.GetAtoms() if _.GetIsotope()}
-        _DAs_inv = {_.GetIdx(): _.GetIsotope() for _ in mol_inv.GetAtoms() if _.GetIsotope()}
+        _DAs = {_.GetIdx(): _.GetAtomMapNum() for _ in mol.GetAtoms() if _.GetAtomMapNum()}
+        _DAs_inv = {_.GetIdx(): _.GetAtomMapNum() for _ in mol_inv.GetAtoms() if _.GetAtomMapNum()}
         for i in range(len(EqOrs[1])):
             for idx, num in _DAs.items():
+                mol.GetAtomWithIdx(idx).SetAtomMapNum(EqOrs[num][i])
                 mol.GetAtomWithIdx(idx).SetIsotope(EqOrs[num][i])
             for idx, num in _DAs_inv.items():
+                mol_inv.GetAtomWithIdx(idx).SetAtomMapNum(EqOrsInv[num][i])
                 mol_inv.GetAtomWithIdx(idx).SetIsotope(EqOrsInv[num][i])
             # add basic mol
             _ID.append(Chem.CanonSmiles(Chem.MolToSmiles(mol)))
@@ -166,7 +168,7 @@ class Complex():
     def __init__(self, smiles, geom, maxResonanceStructures = 1):
         '''
         Generates Complex object from SMILES with stereo info encoded as
-        isotopic labels of donor atoms
+        atomic map numbers of donor atoms
         '''
         self._smiles_init = smiles
         self._geom = geom
@@ -366,6 +368,7 @@ class Complex():
             # randomly set isotopic numbers
             DAs = list(self._DAs.keys())
             for num, idx in enumerate(DAs):
+                mol.GetAtomWithIdx(idx).SetAtomMapNum(num + 1)
                 mol.GetAtomWithIdx(idx).SetIsotope(num + 1)
         # generate needed stereomers
         if regime == 'CA':
@@ -380,7 +383,9 @@ class Complex():
                 if a.GetSymbol() not in ('P', 'As'):
                     continue
                 nHs = a.GetNumExplicitHs() + len([_ for _ in a.GetNeighbors() if _.GetSymbol() == 'H'])
-                if nHs >= 2:
+                nXs = len([_ for _ in a.GetNeighbors() if _.GetSymbol() == '*'])
+                print(nXs)
+                if nHs + nXs >= 2:
                     drop.append(idx)
             idxs = [_ for _ in idxs if _ not in drop]
             # generate all possible combinations of stereocentres
@@ -421,6 +426,7 @@ class Complex():
                 info = {}
                 for idx, a_idx in enumerate(DAs):
                     num = sym.index(idx + 1) + 1
+                    m1.GetAtomWithIdx(a_idx).SetAtomMapNum(num)
                     m1.GetAtomWithIdx(a_idx).SetIsotope(num)
                     info[a_idx] = num
                 # check neighboring DAs restriction
@@ -585,7 +591,7 @@ class Complex():
             for n in ns:
                 d = self._Rcov[self.mol3Dx.GetAtomWithIdx(n).GetAtomicNum()] + \
                     self._Rcov[self.mol3Dx.GetAtomWithIdx(DA).GetAtomicNum()]
-                constraint = [DA, n, False, d, d, 700.0]
+                constraint = [DA, n, False, d, d, self._FFParams['kLA']]
                 self._bond_params.append(constraint)
                 self._ff.UFFAddDistanceConstraint(*constraint)
             # X<-L-A angles
@@ -616,6 +622,28 @@ class Complex():
                         self._ff.UFFAddAngleConstraint(*constraint)
     
     
+    def _SetDummiesBonds(self):
+        '''
+        Sets DA parameters without CA
+        '''
+        # get list of dummies
+        for a in self.mol3Dx.GetAtoms():
+            if a.GetSymbol() != '*' or a.GetAtomMapNum():
+                continue
+            # dummies bonded to DA was already treated
+            flags = [n.GetIdx() in self._DAs.keys() for n in a.GetNeighbors()]
+            if True in flags:
+                continue
+            for n in a.GetNeighbors():
+                if n.GetIdx() in self._DAs.keys():
+                    continue
+                # set k
+                d = self._Rcov[n.GetAtomicNum()] + self._Rcov[a.GetAtomicNum()]
+                constraint = [a.GetIdx(), n.GetIdx(), False, d, d, self._FFParams['kA*']]
+                self._bond_params.append(constraint)
+                self._ff.UFFAddDistanceConstraint(*constraint)
+    
+    
     def _SetForceField(self, confId):
         '''
         Sets force field for the geometry optimization
@@ -635,6 +663,7 @@ class Complex():
         self._SetCentralAtomBonds()
         self._SetDonorAtomsAngles()
         self._SetDonorAtomsParams()
+        self._SetDummiesBonds()
         self._ff_prepared = True
     
     
@@ -752,9 +781,8 @@ class Complex():
         return flag
     
     
-    def AddConstrainedConformer(self, core, confId = 0, ignoreHs = True,
-                                      clearConfs = True, useRandomCoords = True,
-                                      maxAttempts = 10):
+    def AddConstrainedConformer(self, core, confId = 0, clearConfs = True,
+                                useRandomCoords = True, maxAttempts = 10):
         '''
         Constrained embedding using other complex geometry
         Core complex must be a substructure of complex and
@@ -765,43 +793,14 @@ class Complex():
         # make mol3Dx and mol3D
         if not self._embedding_prepared:
             self._SetEmbedding()
+        # prepare molecule for substructure search
+        core_mol = _RemoveRs(deepcopy(core.mol)) # HINT: cannot convert to SMARTS: RDKIT #3774
         # substructure check
-        match = self.mol3Dx.GetSubstructMatch(core.mol)
+        match = self.mol3Dx.GetSubstructMatch(core_mol, useChirality = True)
         if not match:
             raise ValueError('Bad core: core is not a substructure of the complex')
         if self._idx_CA not in match:
             raise ValueError('Bad core: core must contain the central atom')
-        # prepare core
-        if ignoreHs:
-            core_mol = deepcopy(core.mol)
-        else:
-            core_mol = deepcopy(core.mol3D)
-            drop = [] # list of Hs to remove
-            info = {} # info on number of implicit Hs
-            for i, idx in enumerate(match):
-                a1 = self.mol3Dx.GetAtomWithIdx(idx)
-                a2 = core_mol.GetAtomWithIdx(i)
-                n1 = len([_ for _ in a1.GetNeighbors() if _.GetSymbol() == 'H'])
-                n2 = len([_ for _ in a2.GetNeighbors() if _.GetSymbol() == 'H'])
-                if n1 == n2:
-                    continue
-                # find H idxs to drop
-                drop += [_.GetIdx() for _ in a2.GetNeighbors() if _.GetSymbol() == 'H']
-                # explicit atoms
-                info[a2.GetIdx()] = (n2, a2.GetNumRadicalElectrons())
-            # remove Hs
-            ed = Chem.EditableMol(core_mol)
-            for idx in sorted(drop, reverse = True):
-                ed.RemoveAtom(idx)
-            core_mol = ed.GetMol()
-            # set implicit Hs and radicals
-            for idx, (nh, nr) in info.items():
-                core_mol.GetAtomWithIdx(idx).SetNumExplicitHs(nh)
-                core_mol.GetAtomWithIdx(idx).SetNumRadicalElectrons(nr)
-            Chem.SanitizeMol(core_mol)
-            match = self.mol3Dx.GetSubstructMatch(core_mol)
-            if not match:
-                raise RuntimeError('Something went wrong: core is not substructure of the molecule (ignoreHs = False)')
         # prepare embed params
         coordMap = {}
         coreConf = core_mol.GetConformer(confId)
@@ -913,6 +912,21 @@ class Complex():
         self.mol3Dx.RemoveAllConformers()
     
     
+    def GetMinEnergyConfId(self, i):
+        '''
+        Returns idx of Conformer with the i-th lowest energy.
+        Returns None if i >= NumConfs
+        '''
+        N = self.GetNumConformers()
+        if i >= N:
+            raise ValueError('Bad conformer ID')
+        # order Es
+        Es = [(self.mol.GetConformer(idx).GetDoubleProp('E'), idx) for idx in range(N)]
+        Es.sort()
+        
+        return Es[i][1]
+    
+    
     def AddConformers(self, numConfs = 10, clearConfs = True, useRandomCoords = True,
                       maxAttempts = 10, rmsThresh = -1):
         '''
@@ -949,7 +963,7 @@ class Complex():
         return flags
     
     
-    def AddConstrainedConformers(self, core, confId = 0, ignoreHs = True, numConfs = 10,
+    def AddConstrainedConformers(self, core, confId = 0, numConfs = 10,
                                  clearConfs = True, useRandomCoords = True,
                                  maxAttempts = 10, rmsThresh = -1):
         '''
@@ -961,7 +975,7 @@ class Complex():
         flags = []
         for i in range(numConfs):
             clearConfsIter = False if flags else clearConfs
-            flag = self.AddConstrainedConformer(core, confId = confId, ignoreHs = ignoreHs,
+            flag = self.AddConstrainedConformer(core, confId = confId,
                                                 clearConfs = clearConfsIter,
                                                 useRandomCoords = useRandomCoords,
                                                 maxAttempts = maxAttempts)
@@ -1085,6 +1099,8 @@ class Complex():
         '''
         Returns XYZ as text block
         If confId is 'min' or -1, conformer with the lowest energy will be saved
+        If confId is in 'min(i)', i > 0 format, conformer with the i-th lowest
+        energy will be saved
         If confId is 'all' or -2, all conformers will be saved
         '''
         if self._PrintErrorInit():
@@ -1096,13 +1112,12 @@ class Complex():
         if confId in (-2, 'all'):
             conf_idxs = list(range(N))
         elif confId in (-1, 'min'):
-            minE, minI = float('inf'), None
-            for i in range(N):
-                E = self.mol3D.GetConformer(i).GetDoubleProp('E')
-                if E < minE:
-                    minE = E
-                    minI = i
-            conf_idxs = [minI]
+            conf_idxs = [self.GetMinEnergyConfId(0)]
+        elif str(confId)[:4] == 'min(' and str(confId)[-1] == ')':
+            idx = str(confId)[4:-1]
+            if not idx.isdigit():
+                raise ValueError(f'Bad confId values: {confId}')
+            conf_idxs = [self.GetMinEnergyConfId(int(idx))]
         else:
             conf_idxs = [confId]
         text = ''
@@ -1116,11 +1131,12 @@ class Complex():
         '''
         Saves found conformers in XYZ format
         If confId is 'min' or -1, conformer with the lowest energy will be saved
+        If confId is in 'min(i)', i > 0 format, conformer with the i-th lowest
+        energy will be saved
         If confId is 'all' or -2, all conformers will be saved
         '''
         text = self.ToXYZBlock(confId)
         with open(path, 'w') as outf:
             outf.write(text)
-
 
 

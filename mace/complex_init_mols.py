@@ -58,16 +58,18 @@ def ComplexFromLigands(ligands, CA, geom, maxResonanceStructures = 1):
     idx_CA = ed.AddAtom(CA)
     mol = ed.GetMol()
     # find dummies and make flips if needed
-    DAs = [atom for atom in mol.GetAtoms() if atom.GetIsotope()]
+    DAs = [atom for atom in mol.GetAtoms() if atom.GetAtomMapNum()]
     CHIs = [Chem.ChiralType.CHI_TETRAHEDRAL_CCW, Chem.ChiralType.CHI_TETRAHEDRAL_CW]
     CTs = [Chem.rdchem.BondStereo.STEREOCIS, Chem.rdchem.BondStereo.STEREOTRANS]
     dummies = {}
     doubles = []
     for DA in DAs:
         idx_DA = DA.GetIdx()
-        # is dummy bonded
+        # is it DA->[*] fragment
         idx_dummy = None
         for i, b in enumerate(DA.GetBonds()):
+            if str(b.GetBondType()) != 'DATIVE':
+                continue
             atom = b.GetOtherAtom(DA)
             if atom.GetSymbol() == '*' and len(atom.GetNeighbors()) == 1:
                 idx_dummy = atom.GetIdx()
