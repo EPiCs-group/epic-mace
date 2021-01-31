@@ -202,5 +202,3 @@ def ComplexFromXYZFile(path):
     return X
 
 
-
-

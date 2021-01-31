@@ -217,11 +217,10 @@ def MolFromSmiles(smiles):
         ps = Chem.SmilesParserParams()
         ps.removeHs = False
         mol = Chem.MolFromSmiles(smiles, params = ps)
-    # substitute atom mapping by isotopes
+    # add isotopic label to atom with non-zero atom map number
     for atom in mol.GetAtoms():
         if atom.GetAtomMapNum():
             atom.SetIsotope(atom.GetAtomMapNum())
-            atom.SetAtomMapNum(0)
     # # substitute isotopic dummies without dative bonds to Hs
     # for atom in mol.GetAtoms():
     #     if atom.GetAtomicNum() == 0 and atom.GetIsotope():
