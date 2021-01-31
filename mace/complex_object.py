@@ -591,7 +591,7 @@ class Complex():
             for n in ns:
                 d = self._Rcov[self.mol3Dx.GetAtomWithIdx(n).GetAtomicNum()] + \
                     self._Rcov[self.mol3Dx.GetAtomWithIdx(DA).GetAtomicNum()]
-                constraint = [DA, n, False, d, d, 700.0]
+                constraint = [DA, n, False, d, d, self._FFParams['kLA']]
                 self._bond_params.append(constraint)
                 self._ff.UFFAddDistanceConstraint(*constraint)
             # X<-L-A angles
@@ -622,6 +622,28 @@ class Complex():
                         self._ff.UFFAddAngleConstraint(*constraint)
     
     
+    def _SetDummiesBonds(self):
+        '''
+        Sets DA parameters without CA
+        '''
+        # get list of dummies
+        for a in self.mol3Dx.GetAtoms():
+            if a.GetSymbol() != '*' or a.GetAtomMapNum():
+                continue
+            # dummies bonded to DA was already treated
+            flags = [n.GetIdx() in self._DAs.keys() for n in a.GetNeighbors()]
+            if True in flags:
+                continue
+            for n in a.GetNeighbors():
+                if n.GetIdx() in self._DAs.keys():
+                    continue
+                # set k
+                d = self._Rcov[n.GetAtomicNum()] + self._Rcov[a.GetAtomicNum()]
+                constraint = [a.GetIdx(), n.GetIdx(), False, d, d, self._FFParams['kA*']]
+                self._bond_params.append(constraint)
+                self._ff.UFFAddDistanceConstraint(*constraint)
+    
+    
     def _SetForceField(self, confId):
         '''
         Sets force field for the geometry optimization
@@ -641,6 +663,7 @@ class Complex():
         self._SetCentralAtomBonds()
         self._SetDonorAtomsAngles()
         self._SetDonorAtomsParams()
+        self._SetDummiesBonds()
         self._ff_prepared = True
     
     
