@@ -35,14 +35,12 @@ Rs = {'R1': mace.MolFromSmiles('[*]C'),
 
 # complexes
 X0 = Xs[0]
-#X0 = mace.ComplexFromXYZFile('xyz/X0.mol')
+#X0 = mace.ComplexFromXYZFile('xyz/X0.xyz')
 X1 = mace.ComplexFromMol(mace.AddSubsToMol(X0.mol, Rs), 'OH')
 X1.AddConformer()
 
 # embedding
 confId = 3 # check XYZ file for the best one
 X1.AddConstrainedConformer(X0, confId)
-
-
 
 
