@@ -6,7 +6,7 @@ geometries
 
 #%% Imports
 
-import json
+import json, re
 from copy import deepcopy
 from itertools import product, combinations
 
@@ -912,6 +912,21 @@ class Complex():
         self.mol3Dx.RemoveAllConformers()
     
     
+    def GetMinEnergyConfId(self, i):
+        '''
+        Returns idx of Conformer with the i-th lowest energy.
+        Returns None if i >= NumConfs
+        '''
+        N = self.GetNumConformers()
+        if i >= N:
+            raise ValueError('Bad conformer ID')
+        # order Es
+        Es = [(self.mol.GetConformer(idx).GetDoubleProp('E'), idx) for idx in range(N)]
+        Es.sort()
+        
+        return Es[i][1]
+    
+    
     def AddConformers(self, numConfs = 10, clearConfs = True, useRandomCoords = True,
                       maxAttempts = 10, rmsThresh = -1):
         '''
@@ -1084,6 +1099,8 @@ class Complex():
         '''
         Returns XYZ as text block
         If confId is 'min' or -1, conformer with the lowest energy will be saved
+        If confId is in 'min(i)', i > 0 format, conformer with the i-th lowest
+        energy will be saved
         If confId is 'all' or -2, all conformers will be saved
         '''
         if self._PrintErrorInit():
@@ -1095,13 +1112,12 @@ class Complex():
         if confId in (-2, 'all'):
             conf_idxs = list(range(N))
         elif confId in (-1, 'min'):
-            minE, minI = float('inf'), None
-            for i in range(N):
-                E = self.mol3D.GetConformer(i).GetDoubleProp('E')
-                if E < minE:
-                    minE = E
-                    minI = i
-            conf_idxs = [minI]
+            conf_idxs = [self.GetMinEnergyConfId(0)]
+        elif str(confId)[:4] == 'min(' and str(confId)[-1] == ')':
+            idx = str(confId)[4:-1]
+            if not idx.isdigit():
+                raise ValueError(f'Bad confId values: {confId}')
+            conf_idxs = [self.GetMinEnergyConfId(int(idx))]
         else:
             conf_idxs = [confId]
         text = ''
@@ -1115,11 +1131,12 @@ class Complex():
         '''
         Saves found conformers in XYZ format
         If confId is 'min' or -1, conformer with the lowest energy will be saved
+        If confId is in 'min(i)', i > 0 format, conformer with the i-th lowest
+        energy will be saved
         If confId is 'all' or -2, all conformers will be saved
         '''
         text = self.ToXYZBlock(confId)
         with open(path, 'w') as outf:
             outf.write(text)
-
 
 

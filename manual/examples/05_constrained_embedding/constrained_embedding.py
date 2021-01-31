@@ -22,7 +22,8 @@ Xs = X.GetStereomers()
 # generate conformers
 for i, X in enumerate(Xs):
     X.AddConformers(numConfs = 20, rmsThresh = 1.0)
-    X.ToXYZ(f'xyz/X{i}.xyz', 'all')
+    #X.ToXYZ(f'xyz/X{i}.xyz', 'all')
+    X.ToXYZ(f'X{i}.xyz', 'all')
 
 
 #%% Constrained embedding
@@ -30,17 +31,16 @@ for i, X in enumerate(Xs):
 # subs
 Rs = {'R1': mace.MolFromSmiles('[*]CC'),
       'R2': mace.MolFromSmiles('[*]c1c(C)cc(C)cc(C)1')}
-Rs = {'R1': mace.MolFromSmiles('[*]C'),
-      'R2': mace.MolFromSmiles('[*]C')}
+# Rs = {'R1': mace.MolFromSmiles('[*]C'),
+#       'R2': mace.MolFromSmiles('[*]C')}
 
 # complexes
 X0 = Xs[0]
 #X0 = mace.ComplexFromXYZFile('xyz/X0.xyz')
 X1 = mace.ComplexFromMol(mace.AddSubsToMol(X0.mol, Rs), 'OH')
-X1.AddConformer()
 
 # embedding
-confId = 3 # check XYZ file for the best one
-X1.AddConstrainedConformer(X0, confId)
+confId = X0.GetMinEnergyConfId(0)
+print(X1.AddConstrainedConformer(X0, confId))
 
 
