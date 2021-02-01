@@ -149,7 +149,8 @@ X = mace.ComplexFromMol(mace.AddSubsToMol(core.mol, subs), core._geom)
 And generate atomic coordinates using constrained embedding using `AddConstrainedConformer` method:
 
 ```python
-conf_idx = X.AddConstrainedConformer(core)
+conf_min = X.GetMinEnergyConfId()
+X.AddConstrainedConformer(core, confId = conf_min)
 X.ToXYZ('X.xyz', confId = 'min')
 ```
 
