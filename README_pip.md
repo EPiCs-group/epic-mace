@@ -1,6 +1,6 @@
 # MACE: MetAl Complexes Embedding
 
-Python library (beta-version) and command-line tool (under development) for generation of 3D coordinates for complexes of d-/f-elements.
+Python library (*current version 0.4.0*) and command-line tool (under development) for generation of 3D coordinates for complexes of d-/f-elements.
 
 For more details including usage examples see the [GitHub page](https://github.com/EPiCs-group/mace).
 
