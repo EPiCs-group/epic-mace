@@ -25,8 +25,8 @@ Xs = X.GetStereomers()
 # generate conformers
 for i, X in enumerate(Xs):
     X.AddConformers(numConfs = 20, rmsThresh = 1.0)
-    X.ToXYZ(f'xyz/X{i}.xyz', 'all')
-    # X.ToXYZ(f'X{i}.xyz', 'all')
+    # X.ToXYZ(f'xyz/X{i}.xyz', 'all')
+    X.ToXYZ(f'X{i}.xyz', 'all')
 
 
 #%% Constrained embedding
