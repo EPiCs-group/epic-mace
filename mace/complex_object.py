@@ -784,7 +784,7 @@ class Complex():
     
     def AddConstrainedConformer(self, core, confId = 0, clearConfs = True,
                                 useRandomCoords = True, maxAttempts = 10,
-                                deltaR = 0.01):
+                                engine = 'coordMap', deltaR = 0.01):
         '''
         Constrained embedding using other complex geometry
         Core complex must be a substructure of complex and
@@ -792,6 +792,8 @@ class Complex():
         '''
         if len(Chem.GetMolFrags(core.mol)) != 1:
             raise ValueError('Bad core: core must contain exactly one fragment')
+        if engine not in ('coordMap', 'boundsMatrix'):
+            raise ValueError('Unknown engine: must be one of "coordMap" or "boundsMatrix"')
         # make mol3Dx and mol3D
         if not self._embedding_prepared:
             self._SetEmbedding()
@@ -844,7 +846,13 @@ class Complex():
         attempt = maxAttempts
         while flag == -1 and attempt > 0:
             attempt -= 1
-            flag = AllChem.EmbedMolecule(self.mol3Dx, params)
+            if engine == 'coordMap':
+                flag = AllChem.EmbedMolecule(self.mol3Dx, coordMap = coordMap,
+                                             clearConfs = clearConfs,
+                                             useRandomCoords = useRandomCoords,
+                                             enforceChirality = True)
+            elif engine == 'boundsMatrix':
+                flag = AllChem.EmbedMolecule(self.mol3Dx, params)
             if flag == -1:
                 continue
             # set ff
@@ -977,7 +985,8 @@ class Complex():
     
     def AddConstrainedConformers(self, core, confId = 0, numConfs = 10,
                                  clearConfs = True, useRandomCoords = True,
-                                 maxAttempts = 10, deltaR = 0.01, rmsThresh = -1):
+                                 maxAttempts = 10, engine = 'coordMap',
+                                 deltaR = 0.01, rmsThresh = -1):
         '''
         Generates several conformers
         '''
@@ -991,7 +1000,7 @@ class Complex():
                                                 clearConfs = clearConfsIter,
                                                 useRandomCoords = useRandomCoords,
                                                 maxAttempts = maxAttempts,
-                                                deltaR = deltaR)
+                                                engine = engine, deltaR = deltaR)
             # check flag and rms
             if flag == -1:
                 continue

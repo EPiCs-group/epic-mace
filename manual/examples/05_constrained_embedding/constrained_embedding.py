@@ -44,6 +44,9 @@ X1 = mace.ComplexFromMol(mace.AddSubsToMol(X0.mol, Rs), 'OH')
 
 # embedding
 confId = X0.GetMinEnergyConfId(0)
-print(X1.AddConstrainedConformer(X0, confId))
+print(X1.AddConstrainedConformer(X0, confId, engine = 'coordMap'))
+X1.ToXYZ('x1.xyz')
+print(X1.AddConstrainedConformer(X0, confId, engine = 'boundsMatrix'))
+X1.ToXYZ('x2.xyz')
 
 
