@@ -1,10 +1,10 @@
 # MACE: MetAl Complexes Embedding
 
-Python library (*beta*) and command-line tool (*under development*) for generation of 3D coordinates for complexes of d-/f-elements.
+Python library (*current version 0.4.0*) and command-line tool (*under development*) for generation of 3D coordinates for complexes of d-/f-elements.
 
 ## Installation
 
-MACE can be easily installed with conda package manager:
+MACE can be easily installed with conda package manager ([ref](https://anaconda.org/epics.group/epic-mace)):
 
 ```
 > conda create -n mace
@@ -12,7 +12,7 @@ MACE can be easily installed with conda package manager:
 > conda install -c epics.group epic-mace
 ```
 
-You can also use pip, but in this case [RDKit](https://www.rdkit.org/) 2020.03 or later must be already installed, e.g. using conda:
+You can also use pip ([ref](https://pypi.org/project/epic-mace/)), but in this case [RDKit](https://www.rdkit.org/) 2020.03 or later must be already installed, e.g. using conda:
 
 ```
 > conda create -n mace

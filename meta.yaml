@@ -1,13 +1,13 @@
 {% set name = "epic-mace" %}
-{% set version = "0.3.4" %}
+{% set version = "0.4.0" %}
 
 package:
   name: "{{ name|lower }}"
   version: "{{ version }}"
 
 source:
-  url: https://files.pythonhosted.org/packages/0c/78/539862f387c6a2e7d0e4f50f8b73a8b64af0146ad7867e8ca8e5a674eb91/epic_mace-0.3.4.tar.gz
-  sha256: b6c7d1de5735108bf74394b7e4e66b74eb6f0c374c6869f63502147ce0f1bad4
+  url: https://files.pythonhosted.org/packages/18/c6/a0ce47960c0d2d2ff1310483cc89eb6e60978708b7e4b5226becff066a96/epic_mace-0.4.0.tar.gz
+  sha256: 452c78e875dcdabb9d3c9a78e6356ad4ec6449065b0ead3039688c3f0f42fb1d
 
 build:
   number: 0
@@ -16,7 +16,7 @@ build:
 requirements:
   host:
     - pip
-    - python
+    - python >=3.7
     - rdkit >=2020.09
   run:
     - python >=3.7
