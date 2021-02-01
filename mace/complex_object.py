@@ -6,7 +6,7 @@ geometries
 
 #%% Imports
 
-import json, re
+import json
 from copy import deepcopy
 from itertools import product, combinations
 
@@ -719,20 +719,21 @@ class Complex():
         '''
         if self._PrintErrorInit():
             return None
+        # check embedding prerequisites
+        if not self._embedding_prepared:
+            self._SetEmbedding()
+        # set embedding parameters
+        params = rdDG.EmbedParameters()
+        params.clearConfs = clearConfs
+        params.enforceChirality = True
+        params.useRandomCoords = useRandomCoords
+        #params.embedFragmentsSeparately = False
+        params.SetBoundsMat(self._boundsMatrix)
+        # embedding
         flag = -1
         attempt = maxAttempts
         while flag == -1 and attempt > 0:
             attempt -= 1
-            # check embedding prerequisites
-            if not self._embedding_prepared:
-                self._SetEmbedding()
-            # set embedding parameters
-            params = rdDG.EmbedParameters()
-            params.clearConfs = clearConfs
-            params.enforceChirality = True
-            params.useRandomCoords = useRandomCoords
-            #params.embedFragmentsSeparately = False
-            params.SetBoundsMat(self._boundsMatrix)
             # embedding
             flag = AllChem.EmbedMolecule(self.mol3Dx, params)
             if flag == -1:
@@ -782,7 +783,8 @@ class Complex():
     
     
     def AddConstrainedConformer(self, core, confId = 0, clearConfs = True,
-                                useRandomCoords = True, maxAttempts = 10):
+                                useRandomCoords = True, maxAttempts = 10,
+                                engine = 'coordMap', deltaR = 0.01):
         '''
         Constrained embedding using other complex geometry
         Core complex must be a substructure of complex and
@@ -790,6 +792,8 @@ class Complex():
         '''
         if len(Chem.GetMolFrags(core.mol)) != 1:
             raise ValueError('Bad core: core must contain exactly one fragment')
+        if engine not in ('coordMap', 'boundsMatrix'):
+            raise ValueError('Unknown engine: must be one of "coordMap" or "boundsMatrix"')
         # make mol3Dx and mol3D
         if not self._embedding_prepared:
             self._SetEmbedding()
@@ -824,15 +828,31 @@ class Complex():
             dummyMap = {val: key for key, val in dummyMap.items()}
             for idx in add:
                 coordMap[idx] = dummy.GetConformer().GetAtomPosition(dummyMap[idx])
+        # set bounds matrix
+        BM = rdDG.GetMoleculeBoundsMatrix(self.mol3Dx)
+        for (i, ri), (j, rj) in combinations(coordMap.items(), r = 2):
+            d = sum([_**2 for _ in list(ri-rj)])**0.5
+            BM[min(i,j)][max(i,j)] = d + deltaR
+            BM[max(i,j)][min(i,j)] = d - deltaR
+        # embedding parameters
+        params = rdDG.EmbedParameters()
+        params.clearConfs = clearConfs
+        params.enforceChirality = True
+        params.useRandomCoords = useRandomCoords
+        #params.embedFragmentsSeparately = False
+        params.SetBoundsMat(BM)
         # embedding
         flag = -1
         attempt = maxAttempts
         while flag == -1 and attempt > 0:
             attempt -= 1
-            flag = AllChem.EmbedMolecule(self.mol3Dx, coordMap = coordMap,
-                                         clearConfs = clearConfs,
-                                         useRandomCoords = useRandomCoords,
-                                         enforceChirality = True)
+            if engine == 'coordMap':
+                flag = AllChem.EmbedMolecule(self.mol3Dx, coordMap = coordMap,
+                                             clearConfs = clearConfs,
+                                             useRandomCoords = useRandomCoords,
+                                             enforceChirality = True)
+            elif engine == 'boundsMatrix':
+                flag = AllChem.EmbedMolecule(self.mol3Dx, params)
             if flag == -1:
                 continue
             # set ff
@@ -965,7 +985,8 @@ class Complex():
     
     def AddConstrainedConformers(self, core, confId = 0, numConfs = 10,
                                  clearConfs = True, useRandomCoords = True,
-                                 maxAttempts = 10, rmsThresh = -1):
+                                 maxAttempts = 10, engine = 'coordMap',
+                                 deltaR = 0.01, rmsThresh = -1):
         '''
         Generates several conformers
         '''
@@ -978,7 +999,8 @@ class Complex():
             flag = self.AddConstrainedConformer(core, confId = confId,
                                                 clearConfs = clearConfsIter,
                                                 useRandomCoords = useRandomCoords,
-                                                maxAttempts = maxAttempts)
+                                                maxAttempts = maxAttempts,
+                                                engine = engine, deltaR = deltaR)
             # check flag and rms
             if flag == -1:
                 continue

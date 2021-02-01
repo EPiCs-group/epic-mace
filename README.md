@@ -7,9 +7,9 @@ Python library (*current version 0.4.0*) and command-line tool (*under developme
 MACE can be easily installed with conda package manager ([ref](https://anaconda.org/epics.group/epic-mace)):
 
 ```
-> conda create -n mace
+> conda config --add channels epics.group
+> conda create -n mace epic-mace
 > conda activate mace
-> conda install -c epics.group epic-mace
 ```
 
 You can also use pip ([ref](https://pypi.org/project/epic-mace/)), but in this case [RDKit](https://www.rdkit.org/) 2020.03 or later must be already installed, e.g. using conda:
