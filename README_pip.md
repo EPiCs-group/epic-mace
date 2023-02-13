@@ -7,7 +7,7 @@ For more details including usage examples see the [GitHub page](https://github.c
 
 ## Installation
 
-Create new conda environment with [RDKit](http://anaconda.org/rdkit/rdkit) 2020.03.1 or later:
+Create new conda environment with [RDKit](http://anaconda.org/rdkit/rdkit) 2020.09 or later:
 
 ```
 > conda create -n mace
