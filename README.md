@@ -4,25 +4,21 @@ Python library (*current version 0.4.0*) and command-line tool (*under developme
 
 ## Installation
 
-MACE can be easily installed with conda package manager ([ref](https://anaconda.org/epics.group/epic-mace)):
+MACE can be installed with pip ([ref](https://pypi.org/project/epic-mace/)):
 
 ```
-> conda config --add channels epics.group
-> conda create -n mace epic-mace
-> conda activate mace
+> pip install epic-mace
 ```
 
-You can also use pip ([ref](https://pypi.org/project/epic-mace/)), but in this case [RDKit](https://www.rdkit.org/) 2020.03 or later must be already installed, e.g. using conda:
+Since the project uses RDKit as an 3D embedding engine, its performance depends on RDKit build. We found that conda's 2020.09.1 version gives the lowest error rate. Therefore, if you are unhappy with the standard pip installation, try installing RDKit before the mace package:
 
 ```
 > conda create -n mace
 > conda activate mace
-> conda install -c rdkit rdkit=2020.09
+> conda install -c rdkit rdkit=2020.09.1
 > conda install pip
 > pip install epic-mace
 ```
-
-Such scenario may be useful if there are some problems with compatibility of libraries during direct conda installation.
 
 ## CookBook
 
