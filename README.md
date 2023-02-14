@@ -1,6 +1,6 @@
 # MACE: MetAl Complexes Embedding
 
-MACE is an open source toolkit for the automated screening and discovery of octahedral and square-planar mononuclear complexes. MACE is developed by the [Evgeny Pidko Group](https://www.tudelft.nl/en/faculty-of-applied-sciences/about-faculty/departments/chemical-engineering/principal-scientists/evgeny-pidko/evgeny-pidko-group) in the [Department of Chemical Engineering](http://web.mit.edu/cheme/) at [TU Delft](https://www.tudelft.nl/en/). The software can generate all possible configurations for square-planar and octahedral metal complexes and atomic 3D coordinates suitable for quantum-chemical computations. It supports ligands of high complexity and can be used for the development of a massive computational pipelines aimed at solving problems of homogenious catalysis.
+MACE is an open source toolkit for the automated screening and discovery of octahedral and square-planar mononuclear complexes. MACE is developed by the [Evgeny Pidko Group](https://www.tudelft.nl/en/faculty-of-applied-sciences/about-faculty/departments/chemical-engineering/principal-scientists/evgeny-pidko/evgeny-pidko-group) in the [Department of Chemical Engineering](http://web.mit.edu/cheme/) at [TU Delft](https://www.tudelft.nl/en/). The software generates all possible configurations for square-planar and octahedral metal complexes and atomic 3D coordinates suitable for quantum-chemical computations. It supports ligands of high complexity and can be used for the development of a massive computational pipelines aimed at solving problems of homogenious catalysis.
 
 ### Installation
 
@@ -22,9 +22,7 @@ Since this package uses RDKit as an 3D embedding engine, its performance depends
 
 ### Tutorials
 
-- [MACE package](manuals/mace_manual.ipynb): describes various MACE workflows for stereoisomer searching and 3D embedding;
-
-- [CLI](manuals/cli_manual.md): syntax of MACE-based CLI tool.
+- [MACE package](tutorials/mace.ipynb): describes MACE functionality for stereoisomer searching and 3D embedding.
 
 ### GUI
 
@@ -33,5 +31,3 @@ For convenient interactive research of metal complexes, as well as for a better 
 ### Performance
 
 MACE shows high performance (> 99% success rate) for complexes of ligands, extracted from Cambridge Structural Database. For more details see [performance](performance).
-
-
