@@ -1,9 +1,0 @@
-c1cc2ccc1-c1ccc(cc1)-c1ccc(cc1)-c1ccc(cc1)-c1ccc([n:1]c1)-c1ccc(c[n:1]1)-c1ccc(cc1)-c1ccc-2cc1
-O=P(c1ccccc1)(c1ccccc1)C1C(P(=O)(c2ccccc2)c2ccccc2)C([P:1](c2ccccc2)c2ccccc2)C1[P:1](c1ccccc1)c1ccccc1
-c1ccc(P(c2ccccc2)C2C(P(c3ccccc3)c3ccccc3)C([P:1](c3ccccc3)c3ccccc3)C2[P:1](c2ccccc2)c2ccccc2)cc1
-c1cc2ccc1-c1ccc(cc1)-c1ccc(cc1)-c1ccc(cc1)-c1ccc([n:1]c1)-c1ccc(c[n:1]1)-c1ccc(cc1)-c1ccc-2cc1
-c1ccc(OCc2ccc(-c3cccc[n:1]3)[n:1]c2)c(OCCN(CCOc2ccccc2OCc2ccc(-c3cccc[n:1]3)[n:1]c2)CCOc2ccccc2OCc2ccc(-c3cccc[n:1]3)[n:1]c2)c1
-O=C(NCCNC(=O)c1ccc(-c2cccc[n:1]2)[n:1]c1)c1cc(C(=O)NCCNC(=O)c2ccc(-c3cccc[n:1]3)[n:1]c2)cc(C(=O)NCCNC(=O)c2ccc(-c3cccc[n:1]3)[n:1]c2)c1
-O=Cc1ccc(C#Cc2ccc(-c3ccc(COc4ccccc4C(c4ccccc4OCc4ccc(-c5ccc(C#Cc6ccc(C=O)cc6)c[n:1]5)[n:1]c4)c4ccccc4OCc4ccc(-c5ccc(C#Cc6ccc(C=O)cc6)c[n:1]5)[n:1]c4)c[n:1]3)[n:1]c2)cc1
-O=S(=O)([O-])c1ccc(CC(C[P:1](c2ccccc2)c2ccccc2)(C[P:1](c2ccccc2)c2ccccc2)C[P:1](c2ccccc2)c2ccccc2)cc1
-c1ccc([P:1](CN(C[P:1](c2ccccc2)c2ccccc2)C[P:1](c2ccccc2)c2ccccc2)c2ccccc2)cc1

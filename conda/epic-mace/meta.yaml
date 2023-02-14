@@ -1,13 +1,13 @@
 {% set name = "epic-mace" %}
-{% set version = "0.4.0" %}
+{% set version = "0.4.1" %}
 
 package:
   name: "{{ name|lower }}"
   version: "{{ version }}"
 
 source:
-  url: https://files.pythonhosted.org/packages/18/c6/a0ce47960c0d2d2ff1310483cc89eb6e60978708b7e4b5226becff066a96/epic_mace-0.4.0.tar.gz
-  sha256: 452c78e875dcdabb9d3c9a78e6356ad4ec6449065b0ead3039688c3f0f42fb1d
+  url: https://files.pythonhosted.org/packages/ab/e8/e04f6c1dd66f096e59dccbf8c9936eba5f628a264ca9db630665b9a5a3b8/epic_mace-0.4.1.tar.gz
+  sha256: 71721b7467d5b51a331af82690ffaecf28c68ed9e658f1538046b2bb5a399300
 
 build:
   number: 0
@@ -16,11 +16,11 @@ build:
 requirements:
   host:
     - pip
-    - python >=3.7
-    - rdkit >=2020.09
+    - python >=3.7,<3.8.0a0
+    - rdkit >=2020.09,<2021.03
   run:
-    - python >=3.7 # >=3.7,<3.8.0a0
-    - rdkit >=2020.09
+    - python >=3.7,<3.8.0a0
+    - rdkit >=2020.09,<2021.03
 
 test:
   imports:
@@ -31,10 +31,6 @@ about:
   license: "GNU General Public v3 or later (GPLv3+)"
   license_family: GPL3
   license_file: 
-  summary: "Python library and command-line tool for generation of 3D coordinates for complexes of d-/f-elements"
+  summary: "Toolkit for the automated screening and discovery of octahedral and square-planar mononuclear metal complexes"
   doc_url: 
-  dev_url: 
-
-extra:
-  recipe-maintainers:
-    - 17598902
+  dev_url: "http://github.com/EPiCs-group/mace"

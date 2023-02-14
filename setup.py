@@ -5,7 +5,7 @@ with open('README_pip.md', 'r', encoding = 'utf-8') as inpf:
 
 setuptools.setup(
       name = 'epic_mace',
-      version = '0.4.0',
+      version = '0.4.1',
       description = 'Python library and command-line tool for generation of 3D coordinates for complexes of d-/f-elements',
       long_description = long_description,
       long_description_content_type = 'text/markdown',

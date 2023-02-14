@@ -68,15 +68,12 @@ class Complex():
         # check donor atoms labelling
         if 0 in labs:
             self.err_init = 'Bad SMILES: some donor atoms don\'t have an isotopic label'
-            #self._PrintErrorInit()
             return
         elif len(set(labs)) != len(labs):
             self.err_init = 'Bad SMILES: isotopic labels are not unique'
-            #self._PrintErrorInit()
             return
         elif max(labs) > max([_ for _ in self._Geoms[self._geom] if str(_).isdigit()]):
             self.err_init = 'Bad SMILES: maximal isotopic label exceeds number of ligands'
-            #self._PrintErrorInit()
             return
     
     
@@ -195,22 +192,19 @@ class Complex():
         self._ff_prepared = False
     
     
-    def _PrintErrorInit(self):
+    def _RaiseErrorInit(self):
         '''
-        Prints warning if complex does not have enough stereo info
+        Raises warning if complex does not have enough stereo info
         '''
-        message = [self.err_init,
-                   '',
-                   'The initial SMILES contains insufficient or erroneous info',
-                   'on the positions of the ligands around the central atom',
-                   'encoded with isotopic labels.',
-                   'To use 3D generation and other features, generate',
-                   'possible stereomers by passing this Complex object',
-                   'to GetComplexStereomers function with "CA" or "all" regime.',
-                   '', '']
         if self.err_init:
-            print('\n'.join(message))
-            return True
+            message = [self.err_init,
+                       '',
+                       'The initial SMILES contains insufficient or erroneous info',
+                       'on the positions of the ligands around the central atom',
+                       'encoded with isotopic labels.', '',
+                       'To use 3D generation and other features, first generate',
+                       'possible stereomers', '']
+            raise ValueError('\n'.join(message))
         
         return False
     
@@ -219,8 +213,7 @@ class Complex():
         '''
         Compares two Complex objects for equivalence
         '''
-        if self._PrintErrorInit():
-            return None
+        self._RaiseErrorInit()
         
         return bool(self._ID.intersection(X._ID))
     
@@ -229,8 +222,7 @@ class Complex():
         '''
         Checks is the complex enantiomeric
         '''
-        if self._PrintErrorInit():
-            return None
+        self._RaiseErrorInit()
         
         return not bool(self._ID.intersection(self._eID))
     
@@ -239,8 +231,7 @@ class Complex():
         '''
         Checks if two complexes are enantiomers
         '''
-        if self._PrintErrorInit():
-            return None
+        self._RaiseErrorInit()
         
         return bool(self._ID.intersection(X._eID))
     
@@ -384,7 +375,6 @@ class Complex():
                     continue
                 nHs = a.GetNumExplicitHs() + len([_ for _ in a.GetNeighbors() if _.GetSymbol() == 'H'])
                 nXs = len([_ for _ in a.GetNeighbors() if _.GetSymbol() == '*'])
-                print(nXs)
                 if nHs + nXs >= 2:
                     drop.append(idx)
             idxs = [_ for _ in idxs if _ not in drop]
@@ -687,8 +677,7 @@ class Complex():
         '''
         Optimizes Complex
         '''
-        if self._PrintErrorInit():
-            return None
+        self._RaiseErrorInit()
         # optimization
         self._SetForceField(confId)
         self._ff.Initialize()
@@ -717,8 +706,7 @@ class Complex():
         '''
         Generates complex conformer using constrained embedding
         '''
-        if self._PrintErrorInit():
-            return None
+        self._RaiseErrorInit()
         # check embedding prerequisites
         if not self._embedding_prepared:
             self._SetEmbedding()
@@ -952,8 +940,7 @@ class Complex():
         '''
         Generates several conformers
         '''
-        if self._PrintErrorInit():
-            return None
+        self._RaiseErrorInit()
         # generate 3D
         flags = []
         for i in range(numConfs):
@@ -971,7 +958,6 @@ class Complex():
             remove_conf = False
             for cid in flags:
                 rms = AllChem.GetConformerRMS(self.mol3D, cid, flag)
-                #print(rms)
                 if rms < rmsThresh:
                     remove_conf = True
                     break
@@ -990,8 +976,7 @@ class Complex():
         '''
         Generates several conformers
         '''
-        if self._PrintErrorInit():
-            return None
+        self._RaiseErrorInit()
         # generate 3D
         flags = []
         for i in range(numConfs):
@@ -1011,7 +996,6 @@ class Complex():
             remove_conf = False
             for cid in flags:
                 rms = AllChem.GetConformerRMS(self.mol3D, cid, flag)
-                #print(rms)
                 if rms < rmsThresh:
                     remove_conf = True
                     break
@@ -1030,8 +1014,7 @@ class Complex():
         Extracts ligand with available 3D from the embedded complex
         num is an isotopic number of DA owned by target ligand
         '''
-        if self._PrintErrorInit():
-            return None
+        self._RaiseErrorInit()
         N = self.mol3D.GetNumConformers()
         if not N:
             raise ValueError('Complex has no conformers')
@@ -1125,8 +1108,7 @@ class Complex():
         energy will be saved
         If confId is 'all' or -2, all conformers will be saved
         '''
-        if self._PrintErrorInit():
-            return None
+        self._RaiseErrorInit()
         N = self.mol3D.GetNumConformers()
         if not N:
             raise ValueError('Bad conformer ID: complex has no conformers')
