@@ -36,7 +36,7 @@ Please note, that setup.py does not contain rdkit in the requirements list to av
 
 ## Tutorials
 
-- [MACE package](tutorials/mace.ipynb): describes MACE functionality for stereoisomer searching and 3D embedding.
+- [MACE manual](tutorials/mace_manual.ipynb): thoroughly describes MACE functionality for stereoisomer searching and 3D embedding.
 
 ## GUI
 
