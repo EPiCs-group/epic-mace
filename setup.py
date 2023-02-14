@@ -21,6 +21,6 @@ setuptools.setup(
       author = 'Ivan Yu. Chernyshov',
       author_email = 'ivan.chernyshoff@gmail.com',
       packages = ['mace'],
-      install_requires = ['rdkit>=2020.09'],
+      install_requires = [],
       python_requires = '>=3.7'
 )

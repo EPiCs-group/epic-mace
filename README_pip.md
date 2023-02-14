@@ -6,14 +6,32 @@ For more details see the [GitHub page](https://github.com/EPiCs-group/mace).
 
 ## Installation
 
-This package uses RDKit as an 3D embedding engine, so its performance depends on RDKit build. We found that conda's 2020.09.1 version gives the lowest error rate. Therefore, if you are unhappy with the standard pip installation, try to install RDKit before the mace package:
+### conda
+
+We highly recommend to install MACE via the [conda](https://conda.io/docs/) package management system. The following command will create new conda environment with Python 3.7, RDKit 2020.09, and the latest version of MACE:
+
+```ssh
+> conda create -n mace epic-mace -c grimgenius
+```
+
+The reason for the strong preference for installation via conda is that only the RDKit 2020.09 version ensures failure- and error-free operation of the MACE package. Earlier versions do not support dative bonds, and in later versions there are significant changes in the embedding and symmetry processing algorithms which are not well compatible with the MACE's underlying algorithms.
+
+### pip
+
+MACE can be installed via pip ([ref](https://pypi.org/project/epic-mace/)):
 
 ```bash
-> conda create -n mace
-> conda activate mace
-> conda install -c rdkit rdkit=2020.09.1
-> conda install pip # if required
 > pip install epic-mace
 ```
 
-Enjoy!
+However, we strongly recommend installation via conda, since the earliest available RDKit version on PyPI is 2022.03 which does not ensure the stable operation of the MACE package.
+
+In extreme cases, one can install MACE via pip to the conda environment with preinstalled RDKit 2020.09:
+
+```bash
+> conda create -n mace python=3.7 rdkit=2020.09.1 -c rdkit
+> conda activate mace
+> pip install epic-mace
+```
+
+Please note, that setup.py does not contain rdkit in the requirements list to avoid possible conflicts between conda and pip RDKit installations.
