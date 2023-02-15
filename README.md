@@ -34,7 +34,7 @@ In extreme cases, one can install MACE via pip to the conda environment with pre
 
 Please note, that setup.py does not contain rdkit in the requirements list to avoid possible conflicts between conda and pip RDKit installations.
 
-## Tutorials
+## How To
 
 - [MACE manual](tutorials/mace_manual.ipynb): thoroughly describes MACE functionality for stereoisomer searching and 3D embedding.
 
@@ -44,4 +44,4 @@ For convenient interactive research of metal complexes, as well as for a better 
 
 ## Performance
 
-MACE shows high performance (> 99% success rate) for complexes of ligands, extracted from Cambridge Structural Database. For more details see [performance](performance).
+MACE shows high performance (> 99% success rate) for complexes of ligands, extracted from Cambridge Structural Database. For more details see [performance](performance/README.ipynb).
