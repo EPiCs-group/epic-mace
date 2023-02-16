@@ -1,8 +1,10 @@
-'''
-Functions for TH-symmetry-preserved substituents introduction
+'''Functions for introduction of monovalent substituents
+preserving tetrahedral symmetry
 '''
 
 #%% Imports
+
+from typing import Type
 
 from rdkit import Chem
 
@@ -10,8 +12,15 @@ from rdkit import Chem
 #%% Functions
 
 def _BondByDummies(mol, idx1, idx2):
-    '''
-    Creates bond A-B from fragments A-* and B-*
+    '''Creates A-B bond from fragments A-* and B-*
+    
+    Arguments:
+        mol (Type[Chem.Mol]): RDKit molecule object
+        idx1 (int): index of the first dummy atom
+        idx2 (int): index of the seconf dummy atom
+    
+    Returns:
+        Type[Chem.Mol]: RDKit molecule
     '''
     # prepare mol and atoms
     Chem.SetBondStereoFromDirections(mol)
@@ -54,8 +63,10 @@ def _BondByDummies(mol, idx1, idx2):
 
 
 def _CheckSubs(Rs):
-    '''
-    Checks substituents format
+    '''Checks substituents' format
+    
+    Arguments:
+        Rs (dict): substituent name => RDKit molecule
     '''
     for name, mol in Rs.items():
         if name[0] != 'R' or not name[1:].isdigit():
@@ -74,8 +85,19 @@ def _CheckSubs(Rs):
 
 
 def AddSubsToMol(mol, Rs):
-    '''
-    Updates molecule by adding substituents
+    '''Adds susbtituents to the molecule
+    
+    Arguments:
+        mol (Type[Chem.Mol]): RDKit molecule object, containing dummy atoms
+            with non-zero isotopic labels corresponding to substituents numbers
+            ([1*] <=> R1, [2*] <=> R2, etc.)
+        Rs (dict): substituent name => RDKit molecule:
+                - substituents names are "R1", "R2", etc.
+                - RDKit molecule must contain one single-bonded dummy atom,
+                  e.g. Chem.MolFromSmiles('[*]OC') for the methoxy group
+    
+    Returns:
+        Type[Chem.Mol]: RDKit molecule
     '''
     # check Rs
     _CheckSubs(Rs)

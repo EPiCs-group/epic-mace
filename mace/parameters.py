@@ -1,5 +1,5 @@
-'''
-Internal parameters of Complex object
+'''Contains symmetric and geometric parameters required for stereomer generation
+and 3D embedding
 '''
 
 #%% Imports

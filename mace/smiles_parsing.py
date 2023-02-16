@@ -1,8 +1,12 @@
-'''
-Functions for SMILES parsing
+'''Functions for parsing of ChemAxon SMILES
+
+This functions fixes bugs in RDKit 2020.09 version's Chem.MolFromSmiles
+(https://github.com/rdkit/rdkit/issues/3320)
 '''
 
 #%% Imports
+
+from typing import Type
 
 import re
 
@@ -12,8 +16,13 @@ from rdkit import Chem
 #%% Functions
 
 def _ParseBond(text):
-    '''
-    Parses bond's text
+    '''Parses bond
+    
+    Arguments:
+        text (str): text of bond in the ChemAxon SMILES format
+    
+    Returns:
+        dict: bond info
     '''
     info = {'closures': [],
             'branch_open': 0,
@@ -61,8 +70,13 @@ def _ParseBond(text):
 
 
 def _GetCXSmilesBondIdxs(smiles):
-    '''
-    Returns bond indexes in ChemAxon style
+    '''Returns RDKit bond index => ChemAxon bond index mapping
+    
+    Arguments:
+        smiles (str): ChemAxon SMILES
+    
+    Returns:
+        List[int]: list of ChemAxon bond indexes
     '''
     # split smiles to atoms and bonds
     boundaries = []
@@ -122,8 +136,16 @@ def _GetCXSmilesBondIdxs(smiles):
 
 
 def MolFromCXSmiles(smiles, params = None):
-    '''
-    Transforms ChemAxon SMILES to mol
+    '''Generates RDKit Mol from ChemAxon SMILES;
+    fixes the bond index bug
+    
+    Arguments:
+        smiles (str): ChemAxon SMILES
+        params (Optional[Type[Chem.rdmolfiles.SmilesParserParams]]): SMILES
+            parser parameters
+    
+    Returns:
+        Type[Chem.Mol]: RDKit molecule
     '''
     # split to smiles and info
     ps = smiles.split('|')
@@ -207,8 +229,14 @@ def MolFromCXSmiles(smiles, params = None):
 
 
 def MolFromSmiles(smiles):
-    '''
-    Convert SMILES to RDKit Mol object taking into account MACE coding rules
+    '''Generates RDKit molecule from RDKit or ChemAxon SMILES;
+    fixes the bond index bug
+    
+    Arguments:
+        smiles (str): ChemAxon SMILES
+    
+    Returns:
+        Type[Chem.Mol]: RDKit molecule
     '''
     # read smiles with explicit Hs
     if '|' in smiles:
@@ -232,8 +260,14 @@ def MolFromSmiles(smiles):
 
 
 def MolToSmiles(mol):
-    '''
-    Anti-RDKit plug
+    '''Generates SMILES from RDKit molecule (so that one does not need
+    to import rdkit in addition to mace)
+    
+    Arguments:
+        mol (Type[Chem.Mol]): RDKit molecule
+    
+    Returns:
+        str: SMILES of the molecule
     '''
     
     return Chem.MolToSmiles(mol)
