@@ -1049,6 +1049,19 @@ class Complex():
         self.mol3Dx.RemoveAllConformers()
     
     
+    def GetConfEnergy(self, confId):
+        '''Returns MM energy of the conformer
+        
+        Arguments:
+            confId (int): index of the conformer;
+        
+        Returns:
+            float: MM energy of the conformer
+        '''
+        
+        return self.mol3Dx.GetConformer(confId).GetDoubleProp('E')
+    
+    
     def GetMinEnergyConfId(self, i):
         '''Returns index of the conformer with the i-th smallest energy
         
@@ -1057,13 +1070,13 @@ class Complex():
                 in ascending order
         
         Returns:
-            Optinal[int]: index of the conformer, and None if i >= NumConfs
+            int: index of the conformer
         '''
         N = self.GetNumConformers()
         if i >= N:
             raise ValueError('Bad conformer ID')
         # order Es
-        Es = [(self.mol.GetConformer(idx).GetDoubleProp('E'), idx) for idx in range(N)]
+        Es = [(self.GetConfEnergy(idx), idx) for idx in range(N)]
         Es.sort()
         
         return Es[i][1]
