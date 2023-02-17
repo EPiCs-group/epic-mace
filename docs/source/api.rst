@@ -1,6 +1,7 @@
-MACE API
-========
+Package API
+===========
 
-Tra la la
-
+.. automodule:: mace
+   :members:
+   :member-order: bysource
 

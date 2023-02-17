@@ -24,11 +24,17 @@ from ._supporting_functions import _CalcTHVolume, _RemoveRs
 
 class Complex():
     '''The Complex class, describing mononuclear square-planar and octahedral
-    metal complexes.
+    metal complexes. Complex objects contain Chem.Mol objects to describe
+    a molecular connectivity, as well as additional symmetric and geometric data
+    required for stereomer generation and 3D embedding.
     
-    Complexes contain Chem.Mol objects to describe molecular connectivity,
-    as well as additional symmetric and geometric data required for stereomer
-    generation and 3D embedding.
+    Arguments:
+        smiles (str): RDKit/ChemAxon SMILES of the complex;
+        geom (str): molecular geometry, "OH" for octahedral and "SP" for
+            square-planar;
+        maxResonanceStructures (int): maximal number of resonance structures
+            to consider during generation of Complex._ID and Complex._eID
+            attributes.
     
     Attributes:
         _FFParams (dict): force-field parameters of metal center which are absent
@@ -223,17 +229,7 @@ class Complex():
     
     
     def __init__(self, smiles, geom, maxResonanceStructures = 1):
-        '''Generates Complex object from the RDKit/ChemAxon SMILES string
-        of the complex and the molecular geometry of the central atom
-        
-        Arguments:
-            smiles (str): RDKit/ChemAxon SMILES of the complex;
-            geom (str): molecular geometry, "OH" for octahedral and "SP" for
-                square-planar;
-            maxResonanceStructures (int): maximal number of resonance structures
-                to consider during generation of Complex._ID and Complex._eID
-                attributes.
-        '''
+        '''Constructor'''
         self._smiles_init = smiles
         self._geom = geom
         try:
@@ -279,7 +275,7 @@ class Complex():
     def IsEqual(self, X):
         '''Compares two complexes are identical
         
-        Attributes:
+        Arguments:
             X (Type[Complex]): complex which is used for pairwise comparison
         
         Returns:
@@ -304,7 +300,7 @@ class Complex():
     def IsEnantiomer(self, X):
         '''Checks if two complexes are enantiomers
         
-        Attributes:
+        Arguments:
             X (Type[Complex]): complex which is used for pairwise comparison
         
         Returns:
@@ -430,10 +426,11 @@ class Complex():
         
         Arguments:
             regime (str): which stereocenters are considered:
-                    - "CA": changes stereochemistry of center atom only;
-                    - "ligands": changes stereochemistry of undefined
-                                 stereocenters in ligands only;
-                    - "all": changes both stereochemistry of CA and ligands;
+              
+              - "CA": changes stereochemistry of center atom only;
+              - "ligands": changes stereochemistry of undefined stereocenters in ligands only;
+              - "all": changes both stereochemistry of CA and ligands;
+            
             dropEnantiomers (bool): if True, leaves only one enantiomer
                 out of two in the output;
             minTransCycle (Optional[int]): minimal size of the chelate cycle

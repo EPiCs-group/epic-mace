@@ -43,6 +43,10 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+# The name of an image file (relative to this directory) to place at the top
+# of the sidebar.
+#html_logo = 'images/mace_logo.png'
+#html_favicon = 'images/mace_favicon.png'
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -52,6 +56,9 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 
-# -- Options for myst ----------------------------------------------
+# -- Options for exts ----------------------------------------------
+
+# myst-nb
 nb_execution_mode = "cache"
 nb_execution_cache_path = "notebooks"
+

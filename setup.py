@@ -1,11 +1,11 @@
 import setuptools
 
-with open('README_pip.md', 'r', encoding = 'utf-8') as inpf:
+with open('README.md', 'r', encoding = 'utf-8') as inpf:
     long_description = inpf.read()
 
 setuptools.setup(
       name = 'epic_mace',
-      version = '0.4.1',
+      version = '0.4.2',
       description = 'Python library and command-line tool for generation of 3D coordinates for complexes of d-/f-elements',
       long_description = long_description,
       long_description_content_type = 'text/markdown',

@@ -1,24 +1,47 @@
-.. epic-mace documentation master file, created by
-   sphinx-quickstart on Fri Feb 17 00:21:30 2023.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
+=====================================
 Welcome to epic-mace's documentation!
 =====================================
 
+**epic-mace** or MACE (MetAl Complexes Embedding) is an open source python library
+for the automated screening and discovery of metal complexes.
+MACE is developed by the `Evgeny Pidko Group`_ in the `Department of Chemical Engineering`_ at `TU Delft`_.
+Its features are to discover all possible configurations for square-planar and octahedral metal complexes,
+and generate atomic 3D coordinates suitable for quantum-chemical computations.
+MACE shows high performance (> 99% success rate) for complexes of ligands of high denticity (up to 6), 
+and thus is well-suited for the development of a massive computational pipelines aimed at solving problems of homogeneous catalysis.
+    
 .. toctree::
+   :hidden:
    :maxdepth: 1
    :caption: Contents:
    
-   introduction
    installation
    api
    notebooks/mace_manual.ipynb
    gui
 
+
+Requirements
+============
+
+* Python 3.7 or higher (Python 3.7 is recommended);
+* `RDKit`_ 2020.09 or higher (RDKit 2020.09 is a **must** for a correct functioning).
+
+
+Performance
+===========
+
+MACE shows high performance (> 99% success rate) for complexes of ligands, extracted from Cambridge Structural Database. For more details see `performance`_.
+
+
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
+
+.. _Evgeny Pidko Group: https://www.tudelft.nl/en/faculty-of-applied-sciences/about-faculty/departments/chemical-engineering/principal-scientists/evgeny-pidko/evgeny-pidko-group>
+.. _Department of Chemical Engineering: https://www.tudelft.nl/en/faculty-of-applied-sciences/about-faculty/departments/chemical-engineering/
+.. _TU Delft: https://www.tudelft.nl/en/
+.. _RDKit: https://www.rdkit.org/
+.. _performance: https://github.com/EPiCs-group/epic-mace/blob/master/performance/README.ipynb

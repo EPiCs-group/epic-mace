@@ -91,10 +91,9 @@ def AddSubsToMol(mol, Rs):
         mol (Type[Chem.Mol]): RDKit molecule object, containing dummy atoms
             with non-zero isotopic labels corresponding to substituents numbers
             ([1*] <=> R1, [2*] <=> R2, etc.)
-        Rs (dict): substituent name => RDKit molecule:
-                - substituents names are "R1", "R2", etc.
-                - RDKit molecule must contain one single-bonded dummy atom,
-                  e.g. Chem.MolFromSmiles('[*]OC') for the methoxy group
+        Rs (dict): substituent name => RDKit molecule. Substituents names are
+            "R1", "R2", etc. RDKit molecule must contain one single-bonded dummy atom,
+            e.g. Chem.MolFromSmiles('[*]OC') for the methoxy group
     
     Returns:
         Type[Chem.Mol]: RDKit molecule
