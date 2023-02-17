@@ -12,8 +12,8 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Geometry.rdGeometry import Point3D
 
-from .complex_init_mols import ComplexFromMol
-from .complex_object import Complex
+from ._complex_init_mols import ComplexFromMol
+from ._complex_object import Complex
 
 
 #%% Functions

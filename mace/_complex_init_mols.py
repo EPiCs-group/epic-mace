@@ -6,8 +6,8 @@ from typing import List, Type
 
 from rdkit import Chem
 
-from .smiles_parsing import MolFromSmiles
-from .complex_object import Complex
+from ._smiles_parsing import MolFromSmiles
+from ._complex_object import Complex
 
 
 #%% Functions

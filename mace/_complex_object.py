@@ -15,9 +15,9 @@ from rdkit.Chem import AllChem
 #from rdkit.Geometry.rdGeometry import Point3D
 import rdkit.Chem.rdDistGeom as rdDG
 
-from .smiles_parsing import MolFromSmiles
-from .parameters import params
-from .supporting_functions import _CalcTHVolume, _RemoveRs
+from ._smiles_parsing import MolFromSmiles
+from ._parameters import params
+from ._supporting_functions import _CalcTHVolume, _RemoveRs
 
 
 #%% Complex object

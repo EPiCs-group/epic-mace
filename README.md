@@ -34,11 +34,7 @@ In extreme cases, one can install MACE via pip to the conda environment with pre
 
 Please note, that setup.py does not contain rdkit in the requirements list to avoid possible conflicts between conda and pip RDKit installations.
 
-## How To
-
-- [MACE manual](tutorials/mace_manual.ipynb): thoroughly describes MACE functionality for stereoisomer searching and 3D embedding.
-
-## GUI
+## ## GUI
 
 For convenient interactive research of metal complexes, as well as for a better understanding of MACE features, one can use [web applications](https://github.com/IvanChernyshov/mace-notebooks) built on IPython notebooks.
 
