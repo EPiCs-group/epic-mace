@@ -1,13 +1,13 @@
 {% set name = "epic-mace" %}
-{% set version = "0.4.1" %}
+{% set version = "0.4.2" %}
 
 package:
   name: "{{ name|lower }}"
   version: "{{ version }}"
 
 source:
-  url: https://files.pythonhosted.org/packages/ab/e8/e04f6c1dd66f096e59dccbf8c9936eba5f628a264ca9db630665b9a5a3b8/epic_mace-0.4.1.tar.gz
-  sha256: 71721b7467d5b51a331af82690ffaecf28c68ed9e658f1538046b2bb5a399300
+  url: https://files.pythonhosted.org/packages/de/82/9a24da420cd347970509404389aecd9de4ebd671bce56b76a7cd76ec1428/epic_mace-0.4.2.tar.gz
+  sha256: 361cb0c78b89259bb6a8922f707f543eb292b8c16a952c1caa9e28462dd09e4b
 
 build:
   number: 0
