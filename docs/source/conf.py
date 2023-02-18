@@ -45,20 +45,20 @@ exclude_patterns = []
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
-nbsphinx_thumbnails = {
-    'notebooks/general_pipeline.ipynb': 'images/mace.png',
-    'notebooks/complex_init.ipynb': 'images/mace.png',
-    'notebooks/stereomers.ipynb': 'images/mace.png',
-    'notebooks/embedding.ipynb': 'images/mace.png',
-    'notebooks/features.ipynb': 'images/mace.png'
-}
+#nbsphinx_thumbnails = {
+#    'notebooks/general_pipeline.ipynb': 'images/mace.png',
+#    'notebooks/complex_init.ipynb': 'images/mace.png',
+#    'notebooks/stereomers.ipynb': 'images/mace.png',
+#    'notebooks/embedding.ipynb': 'images/mace.png',
+#    'notebooks/features.ipynb': 'images/mace.png'
+#}
 
 
 html_theme_options = {
     'logo_only': False,
 }
-html_logo = 'images/mace.png'
-html_favicon = 'images/mace.png'
+html_logo = 'images/mace_favicon.png'
+html_favicon = 'images/mace_favicon.png'
 
 
 # -- Options for exts ----------------------------------------------

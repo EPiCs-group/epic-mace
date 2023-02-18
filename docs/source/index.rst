@@ -22,7 +22,6 @@ and thus is well-suited for the development of a massive computational pipelines
    input
    tutorial
    api
-   gui
 
 
 Requirements
