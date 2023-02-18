@@ -1,21 +1,31 @@
-'''
-Functions for SMILES parsing
-'''
+'''Contains functions for initializing the Complex object from other molecules'''
 
 #%% Imports
 
+from typing import List, Type
+
 from rdkit import Chem
 
-from .smiles_parsing import MolFromSmiles
-from .complex_object import Complex
+from ._smiles_parsing import MolFromSmiles
+from ._complex_object import Complex
 
 
 #%% Functions
 
 def ComplexFromMol(mol, geom, maxResonanceStructures = 1):
-    '''
-    Initializes Complex from RDKit Mol. Use it if mol->smiles transform is unwanted,
-    e.g. if molecule contains *=DA->CA fragment with stereospecified double bond
+    '''Generates Complex from RDKit Mol object
+    
+    Arguments:
+        mol (Type[Chem.Mol]): molecule corresponding to the mononuclear
+            octahedral/square-planar metal complex;
+        geom (str): molecular geometry, "OH" for octahedral and "SP" for
+            square-planar;
+        maxResonanceStructures (int): maximal number of resonance structures
+                to consider during generation of Complex._ID and Complex._eID
+                attributes.
+    
+    Returns:
+        Type[Complex]: complex object
     '''
     X = Complex('[*:1]->[*]', geom, maxResonanceStructures)
     if not mol or not Chem.MolToSmiles(mol):
@@ -31,13 +41,20 @@ def ComplexFromMol(mol, geom, maxResonanceStructures = 1):
 
 
 def ComplexFromLigands(ligands, CA, geom, maxResonanceStructures = 1):
-    '''
-    Input:
-      * ligands: the list of ligands' SMILES. Donor atoms are those ones
-                 which have atom mapping
-      * CA: the SMILES of central atom
-    Output:
-      * Complex object
+    '''Generates complex from the ligands and the central atom
+    
+    Arguments:
+        ligands (List[str]): the list of ligands' SMILES, donor atoms must
+            have non-zero atomic map numbers;
+        CA (str): SMILES of the central atom;
+        geom (str): molecular geometry, "OH" for octahedral and "SP" for
+            square-planar;
+        maxResonanceStructures (int): maximal number of resonance structures
+                to consider during generation of Complex._ID and Complex._eID
+                attributes.
+    
+    Returns:
+        Type[Complex]: complex object
     '''
     # combine ligands
     ligands = [MolFromSmiles(_) for _ in ligands]

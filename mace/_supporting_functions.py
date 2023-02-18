@@ -1,8 +1,8 @@
-'''
-Supporting functions for the Complex object
-'''
+'''Some supporting functions'''
 
 #%% Imports
+
+from typing import Type, List
 
 from copy import deepcopy
 
@@ -12,8 +12,14 @@ from rdkit import Chem
 #%% Functions
 
 def _CalcTHVolume(conf, idxs):
-    '''
-    Calculates TH volume with given Point3D objects
+    '''Calculates signed volume of tetrahedra formed by four given atoms
+    
+    Arguments:
+        conf (Type[Chem.rdchem.Conformer]): RDKit conformer object;
+        idxs (List[int]): indexes of atoms forming tetrahedron
+    
+    Returns:
+        float: signed volume, Angstroem^3
     '''
     ps = [conf.GetAtomPosition(idx) for idx in idxs]
     v1 = [ps[1].x-ps[0].x, ps[1].y-ps[0].y, ps[1].z-ps[0].z]
@@ -25,8 +31,13 @@ def _CalcTHVolume(conf, idxs):
 
 
 def _RemoveRs(mol):
-    '''
-    Transforms R atoms into implicit form
+    '''Removes dummy atoms describing substituents
+    
+    Arguments:
+        mol (Type[Chem.Mol]): RDKit molecule
+    
+    Returns:
+        Type[Chem.Mol]: RDKit molecule without R dummies
     '''
     mol = deepcopy(mol)
     for a in mol.GetAtoms():

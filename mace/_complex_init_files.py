@@ -1,8 +1,10 @@
-'''
-Functions for SMILES parsing
+'''Contains functions for initializing the Complex object from MACE-generated
+XYZ-files
 '''
 
 #%% Imports
+
+from typing import Type
 
 import json, os
 
@@ -10,14 +12,21 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Geometry.rdGeometry import Point3D
 
-from .complex_init_mols import ComplexFromMol
+from ._complex_init_mols import ComplexFromMol
+from ._complex_object import Complex
 
 
 #%% Functions
 
 def _ReadXYZ(path):
-    '''
-    Reads XYZ file of Complex and returns imitation of Complex object
+    '''Reads MACE-generated XYZ-file and prepares data for Complex initialization
+    
+    Arguments:
+        path (str): path to MACE-generated XYZ file
+    
+    Returns:
+        tuple containing molecules for mol, mol3D, and mol3Dx attributes,
+            and dictionary containing other parameters
     '''
     # read file
     if not os.path.isfile(path):
@@ -177,8 +186,13 @@ def _ReadXYZ(path):
 
 
 def ComplexFromXYZFile(path):
-    '''
-    Reads XYZ file of Complex and returns imitation of Complex object
+    '''Reads MACE-generated XYZ-file and initializes the corresponding Complex object
+    
+    Arguments:
+        path (str): path to MACE-generated XYZ file
+    
+    Returns:
+        Type[Complex]: complex object
     '''
     mol, mol3D, mol3Dx, infos = _ReadXYZ(path)
     # make Complex
