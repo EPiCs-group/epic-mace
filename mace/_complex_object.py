@@ -37,6 +37,26 @@ class Complex():
             attributes.
     
     Attributes:
+        smiles_init (str): SMILES string used for Complex initialization;
+        geom (str): molecular geometry used for Complex initialization;
+        maxResonanceStructures (int): number of resonance structures used for
+            Complex initialization;
+        err_init (Optional[str]): message error corresponding for the incorrect
+            values of DAs' atomic map numbers. If not None, the complex can not
+            be used for 3D embedding, and stereomer search is required;
+        mol (Type[Chem.Mol]): RDKit Molecule describing complex without hydrogens.
+            It is used for chemoinformatical operations (substructure search,
+            generation of unique SMILES);
+        mol3D (Type[Chem.Mol]): RDKit Molecule describing complex with hydrogens.
+            It is used for the generation of XYZ-files;
+        mol3Dx (Type[Chem.Mol]): RDKit Molecule describing complex with hydrogens and
+            dummies describing missing donor atoms. It is used for the MM
+            computations and is available after the first embedding attempt.
+    '''
+    
+    # can not hide private attributes in docs
+    '''
+    Attributes:
         _FFParams (dict): force-field parameters of metal center which are absent
             in RDKit implementation of UFF;
         _Rcov (dict): covalent radii of chemical elements;
@@ -55,8 +75,6 @@ class Complex():
             trans-/axial- positioning);
         _Angles (dict): DA-CA-DA angles required for FF tuning;
         
-        _smiles_init (str): SMILES string used for Complex initialization;
-        _geom (str): molecular geometry used for Complex initialization;
         _idx_CA (int): index of the central atom;
         _DAs (dict): atomic index => DA atom map number;
         _ID (set): set of SMILES describing the same complex and differing in
@@ -76,20 +94,6 @@ class Complex():
         _angle_params (list): list of DA-CA-DA angles and their MM parameters;
         _bond_params (list): list of CA-DA bonds and their MM parameters;
         _ff (Type[AllChem.ForceField.rdForceField.ForceField]): UFF force field object;
-        
-        err_init (Optional[str]): message error corresponding for the incorrect
-            values of DAs' atomic map numbers. If not None, the complex can not
-            be used for 3D embedding, and stereomer search is required;
-        maxResonanceStructures (int): number of resonance structures used for
-            Complex initialization;
-        mol (Type[Chem.Mol]): RDKit Molecule describing complex without hydrogens.
-            It is used for chemoinformatical operations (substructure search,
-            generation of unique SMILES);
-        mol3D (Type[Chem.Mol]): RDKit Molecule describing complex with hydrogens.
-            It is used for the generation of XYZ-files;
-        mol3Dx (Type[Chem.Mol]): RDKit Molecule describing complex with hydrogens and
-            dummies describing missing donor atoms. It is used for the MM
-            computations and is available after the first embedding attempt.
     '''
     
     # symmetric and geometric parameters
@@ -131,7 +135,7 @@ class Complex():
         # check donor atoms labelling
         self._DAs = {_[1].GetIdx(): _[1].GetAtomMapNum() for _ in info}
         labs = list(self._DAs.values())
-        if len(labs) > len([_ for _ in self._Geoms[self._geom] if str(_).isdigit()]):
+        if len(labs) > len([_ for _ in self._Geoms[self.geom] if str(_).isdigit()]):
             raise ValueError('Bad SMILES: number of donor atoms exceeds maximal possible for given geometry')
         # check donor atoms labelling
         if 0 in labs:
@@ -140,7 +144,7 @@ class Complex():
         elif len(set(labs)) != len(labs):
             self.err_init = 'Bad SMILES: isotopic labels are not unique'
             return
-        elif max(labs) > max([_ for _ in self._Geoms[self._geom] if str(_).isdigit()]):
+        elif max(labs) > max([_ for _ in self._Geoms[self.geom] if str(_).isdigit()]):
             self.err_init = 'Bad SMILES: maximal isotopic label exceeds number of ligands'
             return
     
@@ -190,11 +194,11 @@ class Complex():
             if tag in CHIs:
                 atom.SetChiralTag(CHIs[not CHIs.index(tag)])
         # generate structure descriptor
-        EqOrs = self._EqOrs[self._geom]
-        if 'enant' + self._geom in self._EqOrs:
-            EqOrsInv = self._EqOrs['enant' + self._geom]
+        EqOrs = self._EqOrs[self.geom]
+        if 'enant' + self.geom in self._EqOrs:
+            EqOrsInv = self._EqOrs['enant' + self.geom]
         else:
-            EqOrsInv = self._EqOrs[self._geom]
+            EqOrsInv = self._EqOrs[self.geom]
         _ID = []
         _eID = []
         _DAs = {_.GetIdx(): _.GetAtomMapNum() for _ in mol.GetAtoms() if _.GetAtomMapNum()}
@@ -230,8 +234,8 @@ class Complex():
     
     def __init__(self, smiles, geom, maxResonanceStructures = 1):
         '''Constructor'''
-        self._smiles_init = smiles
-        self._geom = geom
+        self.smiles_init = smiles
+        self.geom = geom
         try:
             self.maxResonanceStructures = int(maxResonanceStructures)
         except TypeError:
@@ -240,10 +244,10 @@ class Complex():
             raise ValueError('Bad maximal number of resonance structures: must be zero or positive')
         self.err_init = None
         # check geom
-        if self._geom not in self._Geoms:
-            raise ValueError(f'Unknown geometry type: {self._geom}')
+        if self.geom not in self._Geoms:
+            raise ValueError(f'Unknown geometry type: {self.geom}')
         # check smiles
-        self.mol = MolFromSmiles(self._smiles_init)
+        self.mol = MolFromSmiles(self.smiles_init)
         if not self.mol:
             raise ValueError('Bad SMILES: not readable')
         # check mol
@@ -497,7 +501,7 @@ class Complex():
             # transform mols to Complex objects and return them
             stereomers = []
             for m in mols:
-                stereomers.append( Complex(Chem.MolToSmiles(m), self._geom, self.maxResonanceStructures) )
+                stereomers.append( Complex(Chem.MolToSmiles(m), self.geom, self.maxResonanceStructures) )
             return stereomers
         # find restrictions on DA positions
         pairs = self._FindNeighboringDAs(minTransCycle)
@@ -506,8 +510,8 @@ class Complex():
         stereomers = []
         for m in mols:
             addend = []
-            for idx_sym in sorted(list(self._Syms[self._geom].keys())):
-                sym = self._Syms[self._geom][idx_sym]
+            for idx_sym in sorted(list(self._Syms[self.geom].keys())):
+                sym = self._Syms[self.geom][idx_sym]
                 m1 = deepcopy(m)
                 # set new isotopes
                 info = {}
@@ -519,19 +523,19 @@ class Complex():
                 # check neighboring DAs restriction
                 drop = False
                 for idx_a, idx_b in pairs:
-                    if info[idx_b] not in self._Nears[self._geom][info[idx_a]]:
+                    if info[idx_b] not in self._Nears[self.geom][info[idx_a]]:
                         drop = True
                 if drop:
                     continue
                 # check mer DAs restriction
                 drop = False
                 for idx_a, idx_b in mers:
-                    if info[idx_b] in self._Nears[self._geom][info[idx_a]]:
+                    if info[idx_b] in self._Nears[self.geom][info[idx_a]]:
                         drop = True
                 if drop:
                     continue
                 addend.append(m1)
-            addend = [Complex(Chem.MolToSmiles(m), self._geom, self.maxResonanceStructures) for m in addend]
+            addend = [Complex(Chem.MolToSmiles(m), self.geom, self.maxResonanceStructures) for m in addend]
             # filter uniques
             drop = []
             for i in range(len(addend)-1):
@@ -563,14 +567,14 @@ class Complex():
     def _SetEmbedding(self):
         '''Prepares attributes required for 3D embedding'''
         # find dummies-helpers
-        add = [idx for idx in self._Geoms[self._geom] if 'X' in str(idx)]
-        must = set([idx for idx in self._Geoms[self._geom] if str(idx).isdigit()])
+        add = [idx for idx in self._Geoms[self.geom] if 'X' in str(idx)]
+        must = set([idx for idx in self._Geoms[self.geom] if str(idx).isdigit()])
         have = set([num for num in self._DAs.values()])
         add += list(must.difference(have))
         # prepare coordMap
-        self._coordMap = {self._idx_CA: self._Geoms[self._geom]['CA']}
+        self._coordMap = {self._idx_CA: self._Geoms[self.geom]['CA']}
         for idx, num in self._DAs.items():
-            self._coordMap[idx] = self._Geoms[self._geom][num]
+            self._coordMap[idx] = self._Geoms[self.geom][num]
         # add dummies-helpers to mol3Dx and coordMap
         self._dummies = {}
         ed = Chem.EditableMol(self.mol3D)
@@ -578,15 +582,15 @@ class Complex():
             idx = ed.AddAtom(Chem.Atom(0))
             ed.AddBond(idx, self._idx_CA, Chem.BondType.DATIVE)
             self._dummies[idx] = num
-            self._coordMap[idx] = self._Geoms[self._geom][num]
+            self._coordMap[idx] = self._Geoms[self.geom][num]
         self.mol3Dx = ed.GetMol()
         Chem.SanitizeMol(self.mol3Dx)
         # prepare bounds matrix
         X = rdDG.GetMoleculeBoundsMatrix(self.mol3Dx)
         CS = [(self._idx_CA, 'CA')] + list(self._DAs.items()) + list(self._dummies.items())
         for (i, num1), (j, num2) in combinations(CS, r = 2):
-            dmax = self._Bounds[self._geom][num1][num2]
-            dmin = self._Bounds[self._geom][num2][num1]
+            dmax = self._Bounds[self.geom][num1][num2]
+            dmin = self._Bounds[self.geom][num2][num1]
             X[min(i,j)][max(i,j)] = max(dmin, dmax)
             X[max(i,j)][min(i,j)] = min(dmin, dmax)
         self._boundsMatrix = X
@@ -600,8 +604,8 @@ class Complex():
         for i, j in combinations(range(len(DAs)), r = 2):
             a1_idx, a1_num = DAs[i]
             a2_idx, a2_num = DAs[j]
-            angle = self._Angles[self._geom][a1_num][a2_num]
-            if a1_num in self._Nears[self._geom][a2_num]:
+            angle = self._Angles[self.geom][a1_num][a2_num]
+            if a1_num in self._Nears[self.geom][a2_num]:
                 k = self._FFParams['kZ-LXL']
             else:
                 k = self._FFParams['kE-LXL']
@@ -761,10 +765,10 @@ class Complex():
         for key, val in self._dummies.items():
             DAs[val] = key
         Vs = []
-        for idxs in self._PosVs[self._geom]:
+        for idxs in self._PosVs[self.geom]:
             Vs.append(_CalcTHVolume(conf, [DAs[idx] for idx in idxs]))
         
-        return sum(Vs) > self._MinVs[self._geom] # sum(Vs) > 0
+        return sum(Vs) > self._MinVs[self.geom] # sum(Vs) > 0
     
     
     def Optimize(self, confId = 0, maxIts = 1000):
@@ -1277,7 +1281,7 @@ class Complex():
             dummies += [p.x, p.y, p.z]
         # make text
         info = {'conf': confId, 'E': float(f'{E:.2f}'),
-                'rms': float(f'{rms:.4f}'), 'geom': self._geom,
+                'rms': float(f'{rms:.4f}'), 'geom': self.geom,
                 'total_charge': sum([a.GetFormalCharge() for a in self.mol.GetAtoms()]),
                 'CA_charge': self.mol.GetAtomWithIdx(self._idx_CA).GetFormalCharge(),
                 'smiles': smiles, 'smiles3D': smiles3D,

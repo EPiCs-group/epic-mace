@@ -35,7 +35,7 @@ In extreme cases, one can install MACE via pip to the conda environment with pre
     > pip install epic-mace
 
 Please note, that PyPI epic-mace package does not contain rdkit in the requirements list to avoid possible conflicts between conda and pip RDKit installations.
-Therefore, you must install RDKit manually beforehand.
+Therefore, RDKit must be installed beforehand.
 
 
 .. _conda: https://anaconda.org/grimgenius/epic-mace

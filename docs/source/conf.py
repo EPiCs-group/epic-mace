@@ -9,8 +9,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
+import sys, os
 sys.path.insert(0, os.path.abspath('../../'))
 
 # -- Project information -----------------------------------------------------
@@ -19,7 +18,7 @@ sys.path.insert(0, os.path.abspath('../../'))
 project = 'epic-mace'
 copyright = '2023, Ivan Yu. Chernyshov'
 author = 'Ivan Yu. Chernyshov'
-release = '0.4.1'
+release = '0.4.2'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -27,6 +26,8 @@ release = '0.4.1'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
+    "nbsphinx",
+    "sphinx_gallery.load_style",
     'myst_nb'
 ]
 
@@ -43,22 +44,22 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
-# The name of an image file (relative to this directory) to place at the top
-# of the sidebar.
-#html_logo = 'images/mace_logo.png'
-#html_favicon = 'images/mace_favicon.png'
-
-
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
+#html_theme_options = {
+#    'logo_only': True,
+#}
+#html_logo = 'images/mace_logo.png'
+#html_favicon = 'images/mace_favicon.png'
+
 
 # -- Options for exts ----------------------------------------------
 
 # myst-nb
-nb_execution_mode = "cache"
-nb_execution_cache_path = "notebooks"
+nb_execution_mode = "off"
+nb_execution_cache_path = "source/notebooks/cache"
 

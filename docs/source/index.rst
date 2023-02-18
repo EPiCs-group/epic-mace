@@ -2,9 +2,12 @@
 Welcome to epic-mace's documentation!
 =====================================
 
+.. raw:: html
+   :file: 3D/epic_mace_3D.html
+
 **epic-mace** or MACE (MetAl Complexes Embedding) is an open source python library
 for the automated screening and discovery of metal complexes.
-MACE is developed by the `Evgeny Pidko Group`_ in the `Department of Chemical Engineering`_ at `TU Delft`_.
+MACE is developed by `Ivan Chernyshov`_ as part of the `Evgeny Pidko Group`_ in the `Department of Chemical Engineering`_ at `TU Delft`_.
 Its features are to discover all possible configurations for square-planar and octahedral metal complexes,
 and generate atomic 3D coordinates suitable for quantum-chemical computations.
 MACE shows high performance (> 99% success rate) for complexes of ligands of high denticity (up to 6), 
@@ -16,8 +19,9 @@ and thus is well-suited for the development of a massive computational pipelines
    :caption: Contents:
    
    installation
+   input
+   tutorial
    api
-   notebooks/mace_manual.ipynb
    gui
 
 
@@ -40,6 +44,7 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`search`
 
+.. _Ivan Chernyshov: https://github.com/IvanChernyshov
 .. _Evgeny Pidko Group: https://www.tudelft.nl/en/faculty-of-applied-sciences/about-faculty/departments/chemical-engineering/principal-scientists/evgeny-pidko/evgeny-pidko-group>
 .. _Department of Chemical Engineering: https://www.tudelft.nl/en/faculty-of-applied-sciences/about-faculty/departments/chemical-engineering/
 .. _TU Delft: https://www.tudelft.nl/en/

@@ -135,6 +135,8 @@ def AddSubsToMol(mol, Rs):
         ed.RemoveAtom(idx)
     mol = ed.GetMol()
     Chem.SanitizeMol(mol)
+    # remove Hs since some subs can be hydrogens
+    mol = Chem.RemoveHs(mol)
     
     return mol
 
