@@ -4,20 +4,12 @@ channels:
 dependencies:
   - rdkit=2020.09
   - python=3.7
-  - py3dmol>=2.0
-  - pip>=23.0
+  - pip
   - pip:
-    - myst-nb>=0.17
-    - myst-parser>=0.18
-    - nbclient>=0.5
-    - nbsphinx>=0.8
-    - sphinx>=5.3
+    - myst-nb
+    - myst-parser
+    - nbclient
+    - nbsphinx
+    - sphinx
     - sphinx-gallery<0.11
-    - sphinx-rtd-theme>=1.2
-    - sphinxcontrib-applehelp>=1.0
-    - sphinxcontrib-devhelp>=1.0
-    - sphinxcontrib-htmlhelp>=2.0
-    - sphinxcontrib-jquery>=2.0
-    - sphinxcontrib-jsmath>=1.0
-    - sphinxcontrib-qthelp>=1.0
-    - sphinxcontrib-serializinghtml>=1.1
+    - sphinx-rtd-theme
