@@ -26,15 +26,10 @@ release = '0.4.2'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
-    "nbsphinx",
-    "sphinx_gallery.load_style",
-    'myst_nb'
+    'nbsphinx',
+    'sphinx_gallery.load_style',
+    'myst_parser'
 ]
-
-source_suffix = {
-    '.rst': 'restructuredtext',
-    '.ipynb': 'myst-nb'
-}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -50,11 +45,20 @@ exclude_patterns = []
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
-#html_theme_options = {
-#    'logo_only': True,
-#}
-#html_logo = 'images/mace_logo.png'
-#html_favicon = 'images/mace_favicon.png'
+nbsphinx_thumbnails = {
+    'notebooks/general_pipeline.ipynb': 'images/mace.png',
+    'notebooks/complex_init.ipynb': 'images/mace.png',
+    'notebooks/stereomers.ipynb': 'images/mace.png',
+    'notebooks/embedding.ipynb': 'images/mace.png',
+    'notebooks/features.ipynb': 'images/mace.png'
+}
+
+
+html_theme_options = {
+    'logo_only': False,
+}
+html_logo = 'images/mace.png'
+html_favicon = 'images/mace.png'
 
 
 # -- Options for exts ----------------------------------------------

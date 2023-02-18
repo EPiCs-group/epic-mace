@@ -11,9 +11,10 @@ This document showcases the main features of MACE and provides example recipes o
 particular tasks using the available functionality.
 
 .. nbgallery::
-   notebooks/general_pipeline.ipynb
-   notebooks/complex_init.ipynb
-   notebooks/stereomers.ipynb
-   notebooks/embedding.ipynb
-   notebooks/features.ipynb
+   
+   notebooks/general_pipeline
+   notebooks/complex_init
+   notebooks/stereomers
+   notebooks/embedding
+   notebooks/features
 

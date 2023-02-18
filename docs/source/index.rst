@@ -15,7 +15,7 @@ and thus is well-suited for the development of a massive computational pipelines
     
 .. toctree::
    :hidden:
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Contents:
    
    installation
