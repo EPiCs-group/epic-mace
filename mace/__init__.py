@@ -28,6 +28,9 @@ from ._complex_object import Complex
 from ._complex_init_mols import ComplexFromMol, ComplexFromLigands
 from ._complex_init_files import ComplexFromXYZFile
 
+# package info
+__version__ = '0.4.3'
+
 # module functions
 __all__ = [
     'Complex',
