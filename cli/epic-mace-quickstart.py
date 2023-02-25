@@ -10,37 +10,37 @@ import argparse
 
 TEXT_SUBS = '''# name: SMILES
 # Alk/Ar
-H: [*][H]
-Me: [*]C
-Et: [*]CC
-Pr: [*]CCC
-iPr: [*]C(C)C
-Bu: [*]CCCC
-Ph: [*]c1ccccc1
+H: "[*][H]"
+Me: "[*]C"
+Et: "[*]CC"
+Pr: "[*]CCC"
+iPr: "[*]C(C)C"
+Bu: "[*]CCCC"
+Ph: "[*]c1ccccc1"
 # *-oxy
-OH: [*]O
-OMe: [*]OC
-OEt: [*]OCC
-OPr: [*]OCCC
-OiPr: [*]OC(C)C
-OBu: [*]OCCCC
-OPh: [*]Oc1ccccc1
-OAc: [*]OC(=O)C
+OH: "[*]O"
+OMe: "[*]OC"
+OEt: "[*]OCC"
+OPr: "[*]OCCC"
+OiPr: "[*]OC(C)C"
+OBu: "[*]OCCCC"
+OPh: "[*]Oc1ccccc1"
+OAc: "[*]OC(=O)C"
 # amino
-NH2: [*]N
-NHMe: [*]NC
-NMe2: [*]N(C)C
+NH2: "[*]N"
+NHMe: "[*]NC"
+NMe2: "[*]N(C)C"
 # halogens
-F: [*]F
-Cl: [*]Cl
-Br: [*]Br
-I: [*]I
+F: "[*]F"
+Cl: "[*]Cl"
+Br: "[*]Br"
+I: "[*]I"
 # acceptors
-CN: [*]C#N
-NO2: [*]N(=O)=O
-CO2Me: [*]C(=O)OC
-CO2Et: [*]C(=O)OCC
-Ac: [*]C(=O)C
+CN: "[*]C#N"
+NO2: "[*]N(=O)=O"
+CO2Me: "[*]C(=O)OC"
+CO2Et: "[*]C(=O)OCC"
+Ac: "[*]C(=O)C"
 '''
 
 TEXT_INPUT = '''# example of epic-mace input file
@@ -76,7 +76,6 @@ R1: # name: SMILES must be defined in substituents file
 - H
 - NMe2
 - OMe
-- SMe
 R2:
 - H
 - CN

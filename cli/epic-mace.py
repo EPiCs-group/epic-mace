@@ -14,7 +14,7 @@ def get_parser():
     '''Generates CLI parser'''
     # subs flags are defined in epilog and parsed from unknown arguments
     parser = argparse.ArgumentParser(
-        prog = 'epic-mace', # f'epic-mace, v. {mace.__version__}' # add to description
+        prog = 'epic-mace', # f'epic-mace, v. {mace.__version__}' # TODO: add to description
         description = 'CLI tool for stereomer search and 3D coordinates generation of '
                       'octahedral and square-planar metal complexes. '
                       'For more details see https://epic-mace.readthedocs.io/en/latest/',
@@ -124,7 +124,9 @@ def get_parser():
 
 def read_subs(unknown):
     '''Extracts Rs from unknown arguments'''
-    idxs = [int(arg[3:]) for arg in unknown if re.search('^--R\d+$', arg)] # XXX: R, R0?
+    idxs = [int(arg[3:]) for arg in unknown if re.search('^--R\d+$', arg)]
+    if 0 in idxs:
+        raise ValueError('Input error: --R0 substituent is forbidden; use --R1, etc.')
     # set parser
     subs = argparse.ArgumentParser(prog = 'epic-mace') # prog name for errors
     for idx in sorted(idxs):
@@ -150,8 +152,10 @@ def get_args_from_file(path):
 
 def args_to_command(args):
     '''Generates terminal command from the dictionary'''
-    cmd = []
+    cmd = [args['out_dir']]
     for key, val in args.items():
+        if key == 'out_dir':
+            continue
         if type(val) == list:
             cmd += [f'--{key}'] + [str(_) for _ in val]
         elif type(val) == bool:
@@ -199,15 +203,15 @@ def check_sub(smiles, name):
     '''
     try:
         mol = mace.MolFromSmiles(smiles)
-    except Exception as e:
-        raise ValueError(f'Bad substituent {name}: {smiles}\n Cannot read the SMILES string\n' + str(e))
+    except Exception: # as e:
+        raise ValueError(f'Bad substituent {name}: {smiles}\nCannot read the SMILES string')
     dummies = [_ for _ in mol.GetAtoms() if _.GetSymbol() == '*']
     if len(dummies) != 1:
-        raise ValueError(f'Bad substituent {name}: {smiles}\n Substituent must contain exactly one dummy atom')
+        raise ValueError(f'Bad substituent {name}: {smiles}\nSubstituent must contain exactly one dummy atom')
     if len(dummies[0].GetNeighbors()) != 1:
-        raise ValueError(f'Bad substituent {name}: {smiles}\n Substituent\'s dummy must be bonded to exactly one atom by single bond')
+        raise ValueError(f'Bad substituent {name}: {smiles}\nSubstituent\'s dummy must be bonded to exactly one atom by single bond')
     if str(dummies[0].GetBonds()[0].GetBondType()) != 'SINGLE':
-        raise ValueError(f'Bad substituent {name}: {smiles}\n Substituent\'s dummy must be bonded to exactly one atom by single bond')
+        raise ValueError(f'Bad substituent {name}: {smiles}\nSubstituent\'s dummy must be bonded to exactly one atom by single bond')
     
     return
 
@@ -218,12 +222,12 @@ def get_subs(args, struct):
     isotopes = set()
     smis = args[struct] if struct == 'ligands' else [args['complex']]
     for smiles in smis:
-        mol = mace.MolFromSmiles()
+        mol = mace.MolFromSmiles(smiles)
         for a in mol.GetAtoms():
             if not a.GetAtomicNum() and not a.GetAtomMapNum() and a.GetIsotope():
                 isotopes.add(a.GetIsotope())
     Rs_mol = set([f'R{i}' for i in isotopes])
-    Rs_inp = set([k for k in args.items() if re.search('^R\d+$', k)])
+    Rs_inp = set([k for k in args if re.search('^R\d+$', k)])
     if Rs_mol.difference(Rs_inp):
         diff = ', '.join(Rs_mol.difference(Rs_inp))
         msg = f'some substituents are not defined in the input: {{{diff}}}'
@@ -237,9 +241,10 @@ def get_subs(args, struct):
     if not Rs:
         return {}
     # read a file
-    if not os.path.exists(args.substituents_file):
-        raise ValueError(f'Input error: substituent file does not exist: {args.substituents_file}')
-    with open(args.substituents_file, 'r') as inpf:
+    path = args['substituents_file']
+    if not os.path.exists(path):
+        raise ValueError(f'Input error: substituent file does not exist: {path}')
+    with open(path, 'r') as inpf:
         try:
             subs_info = yaml.safe_load(inpf)
         except Exception as e:
@@ -255,7 +260,7 @@ def get_subs(args, struct):
             if sub not in subs_info:
                 raise ValueError(f'Input error: missing substituent {sub}, please define it in substituents file')
             smiles = subs_info[sub]
-            check_sub(smiles)
+            check_sub(smiles, sub)
             addend.append( (sub, smiles) )
         outp[R] = addend
     
@@ -286,23 +291,23 @@ def check_arguments(args):
         try:
             smiles = args['complex']
             _ = mace.MolFromSmiles(smiles)
-        except Exception as e:
-            raise ValueError(f'Input error: --complex: unreadable SMILES:\n{smiles}\n\n' + str(e))
+        except Exception: # as e:
+            raise ValueError(f'Input error: --complex: unreadable SMILES: {smiles}')
         params['complex'] = args['complex']
     elif has_ligands:
         # --ligands
         try:
             for smiles in args['ligands']:
                 _ = mace.MolFromSmiles(smiles)
-        except Exception as e:
-            raise ValueError(f'Input error: --ligands: unreadable SMILES:\n{smiles}\n\n' + str(e))
+        except Exception: # as e:
+            raise ValueError(f'Input error: --ligands: unreadable SMILES: {smiles}')
         params['ligands'] = args['ligands']
         # --CA
         try:
             smiles = args['CA']
             _ = mace.MolFromSmiles(smiles)
-        except Exception as e:
-            raise ValueError(f'Input error: --CA: unreadable SMILES:\n{smiles}\n\n' + str(e))
+        except Exception: # as e:
+            raise ValueError(f'Input error: --CA: unreadable SMILES: {smiles}')
         params['CA'] = args['CA']
     # no need to check
     for key in ('regime', 'get_enantiomers', 'mer_rule'):
@@ -360,7 +365,9 @@ def run_mace_for_system():
 
 def _main():
     '''Generates 3D coordinates for all stereomers of input complexes'''
-    
+    args = read_arguments()
+    check_arguments(args)
+    print(args)
     
     return
 
@@ -381,8 +388,6 @@ def main():
 
 if __name__ == '__main__':
     
-    #main()
-    args = read_arguments()
-    print(args)
+    _main()
 
 
