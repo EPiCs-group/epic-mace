@@ -45,9 +45,12 @@ Ac: [*]C(=O)C
 
 TEXT_INPUT = '''# example of epic-mace input file
 
+out_dir: ./
+
 # structure
 name: Pd_bipy
 geom: SP
+res-structs: 1
 # define structure via ligands & CA
 ligands:
 - "[*]C1=C[N:4]=C(C=C1)C1=[N:3]C=C([*])C=C1 |$_R1;;;;;;;;;;;_R2;;$,c:3,5,13,t:1,8,10|"
@@ -58,9 +61,9 @@ CA: "[Pd+2]"
 #complex: "[Cl-:1][Pd++]1([Cl-:2])[N:3]2=CC([*])=CC=C2C2=[N:4]1C=C([*])C=C2 |$;;;;;;_R2;;;;;;;;_R1;;$,c:6,8,17,t:3,14,C:11.12,3.2,0.0,2.1|"
 
 # stereomer-search
-regime: none # all, CA, ligands
+regime: none # all, CA, ligands, none
 get-enantiomers: false # true
-trans-cycle: -1 # if -1, trans-position for DA-DA donor atoms not allowed
+trans-cycle: no # if no, trans-position for DA-DA donor atoms not allowed
 mer-rule: true # false
 
 # conformer-generation
@@ -69,11 +72,11 @@ rms-thresh: 1.0 # if -1, not rms filtering
 
 # substituents
 substituents-file: substituents.yaml # default
-R1:
-- H # if name only, SMILES must be defined in substituents file
+R1: # name: SMILES must be defined in substituents file
+- H
 - NMe2
 - OMe
-- SMe="[*]SC" # new substituent
+- SMe
 R2:
 - H
 - CN

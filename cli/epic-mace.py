@@ -23,7 +23,11 @@ def get_parser():
                  'Must be specified if complex contains the corresponding substituents',
         formatter_class = argparse.RawTextHelpFormatter
     )
-    # input file
+    # input/output files
+    parser.add_argument(
+        'out_dir', type = str, nargs = '?', default = './',
+        help = 'directory to store epic-mace output'
+    )
     inpf = parser.add_argument_group(title = 'Input file')
     inpf.add_argument(
         '--input', type = str,
@@ -59,13 +63,17 @@ def get_parser():
         '--CA', type = str,
         help = 'SMILES of the central atom; required if --input is not specified'
     )
+    struct.add_argument(
+        '--res-structs', type = int, default = 1,
+        help = 'maximal number of resonance structures'
+    )
     # stereomers
     stereo = parser.add_argument_group(
         title = 'Stereomer search',
         description = 'Parameters of the stereomer search'
     )
     stereo.add_argument(
-        '--regime', type = str, default = 'all', choices = ['all', 'CA', 'ligands', 'none'],
+        '--regime', default = 'all', choices = ['all', 'CA', 'ligands', 'none'],
         help = 'type of the stereomer search:\n'
                '  - all: iterates over all stereocenters\n'
                '  - ligands: iterates over ligand\'s stereocenters only\n'
@@ -116,7 +124,7 @@ def get_parser():
 
 def read_subs(unknown):
     '''Extracts Rs from unknown arguments'''
-    idxs = [int(arg[3:]) for arg in unknown if re.search('^--R\d+$', arg)] # TODO: R, R0
+    idxs = [int(arg[3:]) for arg in unknown if re.search('^--R\d+$', arg)] # XXX: R, R0?
     # set parser
     subs = argparse.ArgumentParser(prog = 'epic-mace') # prog name for errors
     for idx in sorted(idxs):
@@ -135,7 +143,7 @@ def get_args_from_file(path):
         try:
             args = yaml.safe_load(inpf)
         except Exception as e:
-            raise ValueError('Error: bad-formatted input file:\n' + str(e))
+            raise ValueError('Input error: bad-formatted input file:\n' + str(e))
     
     return args
 
@@ -169,10 +177,155 @@ def read_arguments():
     return {**args.__dict__, **subs_args.__dict__}
 
 
-def check_arguments():
+def get_sub_idxs(smis):
+    '''Returns list of substituents' indexes used in a complex (R1, R2, etc)'''
+    idxs = []
+    for smi in smis:
+        mol = mace.MolFromSmiles(smi)
+        for a in mol.GetAtoms():
+            if not a.GetAtomicNum() and not a.GetAtomMapNum() and a.GetIsotope():
+                idxs.append(a.GetIsotope())
     
+    return sorted(idxs)
+
+
+def check_sub(smiles, name):
+    '''Checks if SMILES satisfies requirements for substitients (contains
+    exactly one single-bonded dummy atom)
     
-    pass
+    Arguments:
+        smiles (str): SMILES of the substituent
+        name (str): name of the substituent (for the error message)
+    '''
+    try:
+        mol = mace.MolFromSmiles(smiles)
+    except Exception as e:
+        raise ValueError(f'Bad substituent {name}: {smiles}\n Cannot read the SMILES string\n' + str(e))
+    dummies = [_ for _ in mol.GetAtoms() if _.GetSymbol() == '*']
+    if len(dummies) != 1:
+        raise ValueError(f'Bad substituent {name}: {smiles}\n Substituent must contain exactly one dummy atom')
+    if len(dummies[0].GetNeighbors()) != 1:
+        raise ValueError(f'Bad substituent {name}: {smiles}\n Substituent\'s dummy must be bonded to exactly one atom by single bond')
+    if str(dummies[0].GetBonds()[0].GetBondType()) != 'SINGLE':
+        raise ValueError(f'Bad substituent {name}: {smiles}\n Substituent\'s dummy must be bonded to exactly one atom by single bond')
+    
+    return
+
+
+def get_subs(args, struct):
+    '''Checks substituents and returns them as addend to parameters'''
+    # compare Rs in args and stars in struct
+    isotopes = set()
+    smis = args[struct] if struct == 'ligands' else [args['complex']]
+    for smiles in smis:
+        mol = mace.MolFromSmiles()
+        for a in mol.GetAtoms():
+            if not a.GetAtomicNum() and not a.GetAtomMapNum() and a.GetIsotope():
+                isotopes.add(a.GetIsotope())
+    Rs_mol = set([f'R{i}' for i in isotopes])
+    Rs_inp = set([k for k in args.items() if re.search('^R\d+$', k)])
+    if Rs_mol.difference(Rs_inp):
+        diff = ', '.join(Rs_mol.difference(Rs_inp))
+        msg = f'some substituents are not defined in the input: {{{diff}}}'
+        raise ValueError(f'Input error: {msg}')
+    if Rs_inp.difference(Rs_mol):
+        diff = ', '.join(Rs_inp.difference(Rs_mol))
+        msg = f'excessive substituents in the input: {{{diff}}}'
+        raise ValueError(f'Input error: {msg}')
+    # check if empty
+    Rs = sorted(list(Rs_mol))
+    if not Rs:
+        return {}
+    # read a file
+    if not os.path.exists(args.substituents_file):
+        raise ValueError(f'Input error: substituent file does not exist: {args.substituents_file}')
+    with open(args.substituents_file, 'r') as inpf:
+        try:
+            subs_info = yaml.safe_load(inpf)
+        except Exception as e:
+            raise ValueError('Input error: bad-formatted substituents file:\n' + str(e))
+    # prepare subs
+    outp = {}
+    for R in Rs:
+        subs = args[R]
+        addend = []
+        if len(subs) != len(set(subs)):
+            raise ValueError(f'Input error: repeating substituent in --{R}')
+        for sub in subs:
+            if sub not in subs_info:
+                raise ValueError(f'Input error: missing substituent {sub}, please define it in substituents file')
+            smiles = subs_info[sub]
+            check_sub(smiles)
+            addend.append( (sub, smiles) )
+        outp[R] = addend
+    
+    return outp
+
+
+def check_arguments(args):
+    '''Checks prepared arguments'''
+    params = {}
+    # check output dir
+    if not os.path.isdir(args['out_dir']):
+        raise ValueError('Input error: specified output directory does not exist')
+    # check required
+    for key in ('name', 'geom'):
+        if not args[key]:
+            raise ValueError(f'Input error: --{key} is not specified')
+        params[key] = args[key]
+    # check mutually exclusive
+    has_complex = bool(args['complex'])
+    has_ligands = args['ligands'] and args['CA']
+    if not has_complex and not has_ligands:
+        raise ValueError('Input error: neither --complex nor --ligands and --CA are not specified')
+    if has_complex and has_ligands:
+        raise ValueError('Input error: both --complex and (--ligands, --CA) are specified')
+    # check SMILES
+    if has_complex:
+        # --complex
+        try:
+            smiles = args['complex']
+            _ = mace.MolFromSmiles(smiles)
+        except Exception as e:
+            raise ValueError(f'Input error: --complex: unreadable SMILES:\n{smiles}\n\n' + str(e))
+        params['complex'] = args['complex']
+    elif has_ligands:
+        # --ligands
+        try:
+            for smiles in args['ligands']:
+                _ = mace.MolFromSmiles(smiles)
+        except Exception as e:
+            raise ValueError(f'Input error: --ligands: unreadable SMILES:\n{smiles}\n\n' + str(e))
+        params['ligands'] = args['ligands']
+        # --CA
+        try:
+            smiles = args['CA']
+            _ = mace.MolFromSmiles(smiles)
+        except Exception as e:
+            raise ValueError(f'Input error: --CA: unreadable SMILES:\n{smiles}\n\n' + str(e))
+        params['CA'] = args['CA']
+    # no need to check
+    for key in ('regime', 'get_enantiomers', 'mer_rule'):
+        params[key]  = args[key]
+    # check numeric params
+    if args['trans_cycle'] is not None:
+        if args['trans_cycle'] < 1:
+            raise ValueError('InputError: --trans-cycle must be a positive integer')
+    if args['num_confs'] < 1:
+        raise ValueError('InputError: --num-confs must be a positive integer')
+    if args['res_structs'] < 1:
+        raise ValueError('InputError: --res-structs must be a positive integer')
+    if args['rms_thresh'] < 0:
+        raise ValueError('InputError: --rms-thresh must be a positive real number')
+    for key in ('trans_cycle', 'num_confs', 'rms_thresh'):
+        params[key] = args[key]
+    # get subs
+    struct = 'complex' if 'complex' in params else 'ligands'
+    subs = get_subs(args, struct)
+    if subs:
+        params['subs'] = subs
+    
+    return params
 
 
 
@@ -205,8 +358,22 @@ def run_mace_for_system():
 
 #%% Main function
 
+def _main():
+    '''Generates 3D coordinates for all stereomers of input complexes'''
+    
+    
+    return
+
+
 def main():
-    pass
+    '''Main function (error handler for _main)'''
+    try:
+        _main()
+    except Exception as e:
+        print(e)
+        sys.exit()
+    
+    return
 
 
 
