@@ -54,14 +54,14 @@ res-structs: 1
 # define structure via ligands & CA
 ligands:
 - "[*]C1=C[N:4]=C(C=C1)C1=[N:3]C=C([*])C=C1 |$_R1;;;;;;;;;;;_R2;;$,c:3,5,13,t:1,8,10|"
-- "[Cl-:2]"
+- "[N:2]#CC"
 - "[Cl-:1]"
-CA: "[Pd+2]"
+CA: "[Rh+]"
 ## via complex (use either ligands & CA or complex)
-#complex: "[Cl-:1][Pd++]1([Cl-:2])[N:3]2=CC([*])=CC=C2C2=[N:4]1C=C([*])C=C2 |$;;;;;;_R2;;;;;;;;_R1;;$,c:6,8,17,t:3,14,C:11.12,3.2,0.0,2.1|"
+#complex: "[Cl-:1][Rh+]1([N:2]#CC)[N:3]2=CC([*])=CC=C2C2=[N:4]1C=C([*])C=C2 |$;;;;;;;;_R2;;;;;;;;_R1;;$,c:8,10,19,t:5,16,C:0.0,2.1,5.4,13.14|"
 
 # stereomer-search
-regime: none # all, CA, ligands, none
+regime: all # all, CA, ligands, none
 get-enantiomers: false # true
 trans-cycle: no # if no, trans-position for DA-DA donor atoms not allowed
 mer-rule: true # false

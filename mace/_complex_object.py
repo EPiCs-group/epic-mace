@@ -1083,6 +1083,22 @@ class Complex():
         return Es[i][1]
     
     
+    def OrderConfsByEnergy(self):
+        '''Orders conformers by their MM energy'''
+        # get new confIds order
+        N = self.GetNumConformers()
+        Es = [(self.GetConfEnergy(idx), idx) for idx in range(N)]
+        i2i = [i for E, i in sorted(Es)]
+        # reorder confs (i => N + new_i => new_i to avoid conflicts between new and old idxs)
+        for mol in ('mol3Dx', 'mol3D', 'mol'):
+            for i in range(N):
+                getattr(self, mol).GetConformer(i2i[i]).SetId(N + i)
+            for i in range(N):
+                getattr(self, mol).GetConformer(N + i).SetId(i)
+        
+        return
+    
+    
     def AddConformers(self, numConfs = 10, clearConfs = True,
                       useRandomCoords = True, maxAttempts = 10,
                       rmsThresh = -1):
