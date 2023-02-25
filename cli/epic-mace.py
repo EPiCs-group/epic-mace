@@ -4,6 +4,7 @@
 
 import re, sys, os
 import argparse, yaml
+from itertools import product
 
 import mace
 
@@ -268,11 +269,12 @@ def get_subs(args, struct):
 
 
 def check_arguments(args):
-    '''Checks prepared arguments'''
+    '''Checks prepared arguments and returns parameters for the job'''
     params = {}
     # check output dir
     if not os.path.isdir(args['out_dir']):
         raise ValueError('Input error: specified output directory does not exist')
+    params['out_dir'] = args['out_dir']
     # check required
     for key in ('name', 'geom'):
         if not args[key]:
@@ -336,28 +338,104 @@ def check_arguments(args):
 
 #%% Generation
 
-def get_complex_from_smiles():
-    pass
+def prepare_complexes(params):
+    '''Prepares complexes for stereomer search'''
+    # combine ligands to complex
+    if 'complex' not in params:
+        X = mace.ComplexFromLigands(params['ligands'], params['CA'], params['geom'])
+        params['complex'] = mace.MolToSmiles(X.mol)
+    # add subs
+    core = mace.MolFromSmiles(params['complex'])
+    Rs = list(params['subs'].keys())
+    systems = []
+    for subs_info in product(*params['subs'].values()):
+        # prepare subs
+        sub_names, sub_smis = zip(*subs_info)
+        fullname = f'{params["name"]}_{"_".join(sub_names)}'
+        subs = {R: mace.MolFromSmiles(smi) for R, smi in zip(Rs, sub_smis)}
+        # get base complex
+        mol = mace.AddSubsToMol(core, subs)
+        X = mace.ComplexFromMol(mol, params['geom'])
+        # reset map numbers
+        if params['regime'] != 'none':
+            for idx in X._DAs:
+                X.mol.GetAtomWithIdx(idx).SetAtomMapNum(1)
+                X.mol.GetAtomWithIdx(idx).SetIsotope(1)
+            X = mace.ComplexFromMol(X.mol, X.geom)
+        systems.append( (fullname, X) )
+    # get repeating complexes
+    repeats = []
+    if params['regime'] == 'none':
+        # compare them as complexes
+        N = len(systems)
+        for i in range(N - 1):
+            name_i, X_i = systems[i]
+            if name_i in repeats:
+                continue
+            for j in range(i + 1, N):
+                name_j, X_j = systems[j]
+                if X_i.IsEqual(X_j):
+                    repeats.append(name_j)
+    else:
+        # compare as mol SMILES
+        N = len(systems)
+        for i in range(N - 1):
+            name_i, X_i = systems[i]
+            if name_i in repeats:
+                continue
+            smi_i = mace.MolToSmiles(X_i.mol)
+            for j in range(i + 1, N):
+                name_j, X_j = systems[j]
+                smi_j = mace.MolToSmiles(X_j.mol)
+                if smi_i == smi_j:
+                    repeats.append(name_j)
+    # drop repeats
+    systems = {name: X for name, X in systems if name not in repeats}
+    
+    return systems
 
 
-def get_complex_from_ligands():
-    pass
+def save_isomers(Xs, fullname, params):
+    '''Saves generated structures as xyz files'''
+    # complex dir
+    path_dir = os.path.join(params['out_dir'], fullname)
+    if not os.path.exists(path_dir):
+        os.mkdir(path_dir)
+    # save xyz-files
+    info = {'n_iso': len(Xs), 'no_confs': []}
+    for i, X in enumerate(Xs):
+        if not X.GetNumConformers():
+            info['no_confs'].append(i)
+            continue
+        path = os.path.join(path_dir, f'{fullname}_iso{i}.xyz')
+        X.ToXYZ(path)
+    # print info message
+    msg = f'{fullname}: found {info["n_iso"]} isomers'
+    if info['no_confs']:
+        msg += f'; no confs generated for isomers ## {", ".join(info["no_confs"])}'
+    print(msg)
+    
+    return
 
 
-def get_stereomers():
-    pass
-
-
-def get_conformers():
-    pass
-
-
-def save_conformers():
-    pass
-
-
-def run_mace_for_system():
-    pass
+def run_mace_for_system(X, fullname, params):
+    '''Generates stereomers and conformers for the complex'''
+    # stereomers
+    if params['regime'] == 'none':
+        if X.err_init:
+            raise ValueError(f'Input error: {fullname}:\n{X.err_init}')
+        Xs = [X]
+    else:
+        Xs = X.GetStereomers(params['regime'], not params['get_enantiomers'],
+                             params['trans_cycle'], params['mer_rule'])
+    # conformers
+    for X in Xs:
+        X.AddConformers(numConfs = params['num_confs'],
+                        rmsThresh = params['rms_thresh'])
+    # output
+    save_isomers(Xs, fullname, params)
+    
+    return
 
 
 
@@ -365,9 +443,13 @@ def run_mace_for_system():
 
 def _main():
     '''Generates 3D coordinates for all stereomers of input complexes'''
+    # get parameters
     args = read_arguments()
-    check_arguments(args)
-    print(args)
+    params = check_arguments(args)
+    # get complexes
+    jobs = prepare_complexes(params)
+    for fullname, X in jobs.items():
+        run_mace_for_system(X, fullname, params)
     
     return
 
@@ -388,6 +470,6 @@ def main():
 
 if __name__ == '__main__':
     
-    _main()
+    main()
 
 
