@@ -10,6 +10,8 @@ import json
 from copy import deepcopy
 from itertools import product, combinations
 
+import numpy as np
+
 from rdkit import Chem
 from rdkit.Chem import AllChem
 #from rdkit.Geometry.rdGeometry import Point3D
@@ -1097,6 +1099,43 @@ class Complex():
                 getattr(self, mol).GetConformer(N + i).SetId(i)
         
         return
+    
+    
+    def GetRepresentativeConfs(self, numConfs = 5, dE = 25.0, dropCloseEnergy = True):
+        '''Returns IDs of approximately most distant conformers (greedy approach)
+        
+        Arguments:
+            numConfs (int): maximal number of conformers to select;
+            dE (float): maximal allowed relative energy of conformer;
+            dropCloseEnergy (bool): drops conformers with close energy (dE < 0.02).
+        
+        Returns:
+            List[int]: list of conformers' IDs
+        '''
+        # drop high-energy confs
+        idxs = sorted([conf.GetId() for conf in self.mol3D.GetConformers()])
+        Es = [self.GetConfEnergy(idx) for idx in idxs]
+        Emin = min(Es)
+        idxs = [(E, idx) for idx, E in zip(idxs, Es) if E - Emin < dE]
+        if dropCloseEnergy:
+            drop = [i for i in range(1, len(idxs)) if idxs[i][0]-idxs[i-1][0] < 0.02]
+            idxs = [(E, idx) for i, (E, idx) in enumerate(idxs) if i not in drop]
+        idxs = [idx for E, idx in sorted(idxs)]
+        if len(idxs) <= numConfs:
+            return idxs
+        # get RMSD matrix
+        M = np.zeros( [len(idxs), len(idxs)] )
+        for (i, ii), (j, jj) in combinations(enumerate(idxs), 2):
+            Chem.rdMolAlign.AlignMolConformers(self.mol, confIds = [ii, jj])
+            M[i,j] = M[j,i] = Chem.rdMolAlign.CalcRMS(self.mol, self.mol, ii, jj)
+        # greedy selection
+        picked = [0]
+        while len(picked) < numConfs:
+            SM = M[:,picked]
+            picked.append(np.argmax(np.min(SM, axis = 1)[1:]) + 1)
+        idxs = [idx for i, idx in enumerate(idxs) if i in picked]
+        
+        return idxs
     
     
     def AddConformers(self, numConfs = 10, clearConfs = True,
