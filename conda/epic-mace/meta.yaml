@@ -1,5 +1,5 @@
 {% set name = "epic-mace" %}
-{% set version = "0.4.2" %}
+{% set version = "1.0.0" %}
 
 package:
   name: "{{ name|lower }}"
@@ -18,9 +18,13 @@ requirements:
     - pip
     - python >=3.7,<3.8.0a0
     - rdkit >=2020.09,<2021.03
+    - numpy
+    - pyyaml
   run:
     - python >=3.7,<3.8.0a0
     - rdkit >=2020.09,<2021.03
+    - numpy
+    - pyyaml
 
 test:
   imports:
@@ -32,5 +36,5 @@ about:
   license_family: GPL3
   license_file: 
   summary: "Toolkit for the automated screening and discovery of octahedral and square-planar mononuclear metal complexes"
-  doc_url: 
+  doc_url: "https://epic-mace.readthedocs.io/en/latest/"
   dev_url: "http://github.com/EPiCs-group/mace"

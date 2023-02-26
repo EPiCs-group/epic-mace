@@ -70,6 +70,10 @@ mer-rule: true # false
 num-confs: 10
 rms-thresh: 1.0 # if -1, not rms filtering
 
+# conformer post-processing
+
+
+
 # substituents
 substituents-file: substituents.yaml # default
 R1: # name: SMILES must be defined in substituents file
