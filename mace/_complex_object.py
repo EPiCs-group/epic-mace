@@ -1307,54 +1307,72 @@ class Complex():
         return '\n'.join(text)+'\n'
     
     
-    def ToXYZBlock(self, confId = 'all'):
-        '''Generates text block of (multiple) XYZ file
+    def ToXYZBlock(self, confId = None):
+        '''Generates text block of XYZ file
         
         Arguments:
-            confId (Union[str,int]): which conformers must be included:
-                    - 'min' or -1: conformer with the lowest energy;
-                    - 'min(i)': conformer with i-th lowest energy;
-                    - i >= 0: i-th conformer;
-                    - 'all' or -2: all conformers.
+            confId (Optional[int]): conformer Id; if None, 0-th conformer is saved
         
         Returns:
-            str: text block of the (multiple) XYZ file
+            str: text block of the XYZ file
         '''
         self._RaiseErrorInit()
         N = self.mol3D.GetNumConformers()
         if not N:
             raise ValueError('Bad conformer ID: complex has no conformers')
         # prepare conf idxs
-        if confId in (-2, 'all'):
-            conf_idxs = list(range(N))
-        elif confId in (-1, 'min'):
-            conf_idxs = [self.GetMinEnergyConfId(0)]
-        elif str(confId)[:4] == 'min(' and str(confId)[-1] == ')':
-            idx = str(confId)[4:-1]
-            if not idx.isdigit():
-                raise ValueError(f'Bad confId values: {confId}')
-            conf_idxs = [self.GetMinEnergyConfId(int(idx))]
-        else:
-            conf_idxs = [confId]
+        if confId is None:
+            confId = 0
+        
+        return self._ConfToXYZ(confId)
+    
+    
+    def ToMultipleXYZBlock(self, confIds = None):
+        '''Generates text block of multiple XYZ file
+        
+        Arguments:
+            confIds (Optional[List[int]]): ordered list of conformer Ids
+                to include in XYZ-block. If None, all conformers are saved
+        
+        Returns:
+            str: text block of the multiple XYZ file
+        '''
+        self._RaiseErrorInit()
+        N = self.mol3D.GetNumConformers()
+        if not N:
+            raise ValueError('Bad conformer ID: complex has no conformers')
+        # prepare conf idxs
+        if confIds is None:
+            confIds = sorted([conf.GetId() for conf in self.mol3D.GetConformers()])
+        # get text
         text = ''
-        for conf_id in conf_idxs:
-            text += self._ConfToXYZ(conf_id)
+        for confId in confIds:
+            text += self._ConfToXYZ(confId)
         
         return text
     
     
-    def ToXYZ(self, path, confId = -2):
-        '''Saves complex as (multiple) XYZ file
+    def ToXYZ(self, path, confId = None):
+        '''Saves complex as XYZ file
         
         Arguments:
             path (str): file path;
-            confId (Union[str,int]): which conformers must be included"
-                    - 'min' or -1: conformer with the lowest energy;
-                    - 'min(i)': conformer with i-th lowest energy;
-                    - i >= 0: i-th conformer;
-                    - 'all' or -2: all conformers.
+            confIds (Optional[int]): conformer Id; if None, 0-th conformer is saved
         '''
         text = self.ToXYZBlock(confId)
+        with open(path, 'w') as outf:
+            outf.write(text)
+    
+    
+    def ToMultipleXYZ(self, path, confIds = None):
+        '''Saves complex as multiple XYZ file
+        
+        Arguments:
+            path (str): file path;
+            confIds (Optional[List[int]]): ordered list of conformer Ids
+                to include in XYZ-block. If None, all conformers are saved
+        '''
+        text = self.ToMultipleXYZBlock(confIds)
         with open(path, 'w') as outf:
             outf.write(text)
 
