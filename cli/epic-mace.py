@@ -6,6 +6,7 @@ import re, sys, os
 import argparse, yaml
 from itertools import product
 
+sys.path.insert(0, os.path.abspath('../')) # XXX: remove in final version
 import mace
 
 
@@ -15,10 +16,11 @@ def get_parser():
     '''Generates CLI parser'''
     # subs flags are defined in epilog and parsed from unknown arguments
     parser = argparse.ArgumentParser(
-        prog = 'epic-mace', # f'epic-mace, v. {mace.__version__}' # TODO: add to description
-        description = 'CLI tool for stereomer search and 3D coordinates generation of '
-                      'octahedral and square-planar metal complexes. '
-                      'For more details see https://epic-mace.readthedocs.io/en/latest/',
+        prog = 'epic-mace',
+        description = f'epic-mace v. {mace.__version__}. '
+                       'CLI tool for stereomer search and 3D coordinates generation of '
+                       'octahedral and square-planar metal complexes. '
+                       'For more details see https://epic-mace.readthedocs.io/en/latest/',
         epilog = '  --R1, --R2, etc.      lists of substituent names. If substituent name '
                  'is not described in substituents file, SMILES must be provided (sub="SMILES"). '
                  'Must be specified if complex contains the corresponding substituents',
@@ -102,13 +104,32 @@ def get_parser():
         description = 'Parameters of generation of 3D atomic coordinates'
     )
     confs.add_argument(
-        '--num-confs', type = int, default = 5,
+        '--num-confs', type = int, default = 20,
         help = 'number of conformers to generate'
     )
     confs.add_argument(
         '--rms-thresh', type = float, default = None,
         help = 'drops one of two conformers if their RMSD is less than this threshold. '
                'If not specified, all generated conformers are returned'
+    )
+    # conformers filtration
+    confs = parser.add_argument_group(
+        title = 'Postprocessing of conformers',
+        description = 'Parameters for representative selection of low-energy conformers'
+    )
+    confs.add_argument(
+        '--num-repr-confs', type = int, default = None,
+        help = 'maximal number of conformers to select. If not specified, '
+               'no post-processing is performed'
+    )
+    confs.add_argument(
+        '--e-rel-max', type = float, default = 25.0,
+        help = 'maximal relative energy of conformer not to be dropped from consideration'
+    )
+    confs.add_argument(
+        '--drop-close-energy', action = 'store_true',
+        help = 'if specified, drops one of two conformers with difference in energy '
+               'less than 0.02 kJ/mol'
     )
     # substituents
     subs = parser.add_argument_group(
@@ -275,12 +296,13 @@ def check_arguments(args):
     if not os.path.isdir(args['out_dir']):
         raise ValueError('Input error: specified output directory does not exist')
     params['out_dir'] = args['out_dir']
-    # check required
+    
+    # check structure
     for key in ('name', 'geom'):
         if not args[key]:
             raise ValueError(f'Input error: --{key} is not specified')
         params[key] = args[key]
-    # check mutually exclusive
+    # check mutually exclusive params in structure
     has_complex = bool(args['complex'])
     has_ligands = args['ligands'] and args['CA']
     if not has_complex and not has_ligands:
@@ -311,21 +333,35 @@ def check_arguments(args):
         except Exception: # as e:
             raise ValueError(f'Input error: --CA: unreadable SMILES: {smiles}')
         params['CA'] = args['CA']
-    # no need to check
-    for key in ('regime', 'get_enantiomers', 'mer_rule'):
-        params[key]  = args[key]
-    # check numeric params
+    # resonance
+    if args['res_structs'] < 1:
+        raise ValueError('InputError: --res-structs must be a positive integer')
+    params['res_structs'] = args['res_structs']
+    
+    # stereomer search
     if args['trans_cycle'] is not None:
         if args['trans_cycle'] < 1:
             raise ValueError('InputError: --trans-cycle must be a positive integer')
+    # no need to check others
+    for key in ('regime', 'get_enantiomers', 'trans_cycle', 'mer_rule'):
+        params[key]  = args[key]
+    
+    # 3D generation
     if args['num_confs'] < 1:
         raise ValueError('InputError: --num-confs must be a positive integer')
-    if args['res_structs'] < 1:
-        raise ValueError('InputError: --res-structs must be a positive integer')
     if args['rms_thresh'] < 0:
         raise ValueError('InputError: --rms-thresh must be a positive real number')
-    for key in ('trans_cycle', 'num_confs', 'rms_thresh'):
+    for key in ('num_confs', 'rms_thresh'):
         params[key] = args[key]
+    
+    # 3D post-processing
+    if args['num_repr_confs'] is not None and args['num_repr_confs'] < 1:
+        raise ValueError('InputError: --num-repr-confs must be a positive integer')
+    if args['e_rel_max'] < 0:
+        raise ValueError('InputError: --e-rel-max must be a positive real number')
+    for key in ('num_repr_confs', 'e_rel_max', 'drop_close_energy'):
+        params[key] = args[key]
+    
     # get subs
     struct = 'complex' if 'complex' in params else 'ligands'
     subs = get_subs(args, struct)
@@ -355,7 +391,7 @@ def prepare_complexes(params):
         subs = {R: mace.MolFromSmiles(smi) for R, smi in zip(Rs, sub_smis)}
         # get base complex
         mol = mace.AddSubsToMol(core, subs)
-        X = mace.ComplexFromMol(mol, params['geom'])
+        X = mace.ComplexFromMol(mol, params['geom'], params['res_structs'])
         # reset map numbers
         if params['regime'] != 'none':
             for idx in X._DAs:
@@ -408,7 +444,13 @@ def save_isomers(Xs, fullname, params):
             info['no_confs'].append(i)
             continue
         path = os.path.join(path_dir, f'{fullname}_iso{i}.xyz')
-        X.ToXYZ(path)
+        if params['num_repr_confs']:
+            idxs = X.GetRepresentativeConfs(params['num_repr_confs'],
+                                            params['e_rel_max'],
+                                            params['drop_close_energy'])
+        else:
+            idxs = None
+        X.ToMultipleXYZ(path, idxs)
     # print info message
     msg = f'{fullname}: found {info["n_iso"]} isomers'
     if info['no_confs']:
@@ -432,6 +474,7 @@ def run_mace_for_system(X, fullname, params):
     for X in Xs:
         X.AddConformers(numConfs = params['num_confs'],
                         rmsThresh = params['rms_thresh'])
+        X.OrderConfsByEnergy()
     # output
     save_isomers(Xs, fullname, params)
     

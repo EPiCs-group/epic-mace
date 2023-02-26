@@ -45,6 +45,7 @@ Ac: "[*]C(=O)C"
 
 TEXT_INPUT = '''# example of epic-mace input file
 
+# output directory
 out_dir: ./
 
 # structure
@@ -67,12 +68,13 @@ trans-cycle: no # if no, trans-position for DA-DA donor atoms not allowed
 mer-rule: true # false
 
 # conformer-generation
-num-confs: 10
+num-confs: 3
 rms-thresh: 1.0 # if -1, not rms filtering
 
 # conformer post-processing
-
-
+num-repr-confs: no # or positive integer
+e-rel-max: 25.0 # kJ/mol
+drop-close-energy: true # false
 
 # substituents
 substituents-file: substituents.yaml # default

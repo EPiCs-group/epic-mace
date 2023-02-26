@@ -1107,7 +1107,7 @@ class Complex():
         Arguments:
             numConfs (int): maximal number of conformers to select;
             dE (float): maximal allowed relative energy of conformer;
-            dropCloseEnergy (bool): drops conformers with close energy (dE < 0.02).
+            dropCloseEnergy (bool): drops conformers with close energy (delta-E < 0.1).
         
         Returns:
             List[int]: list of conformers' IDs
@@ -1118,7 +1118,7 @@ class Complex():
         Emin = min(Es)
         idxs = [(E, idx) for idx, E in zip(idxs, Es) if E - Emin < dE]
         if dropCloseEnergy:
-            drop = [i for i in range(1, len(idxs)) if idxs[i][0]-idxs[i-1][0] < 0.02]
+            drop = [i for i in range(1, len(idxs)) if idxs[i][0]-idxs[i-1][0] < 0.1]
             idxs = [(E, idx) for i, (E, idx) in enumerate(idxs) if i not in drop]
         idxs = [idx for E, idx in sorted(idxs)]
         if len(idxs) <= numConfs:
