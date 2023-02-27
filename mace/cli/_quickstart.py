@@ -92,6 +92,12 @@ R2:
 
 #%% Functions
 
+class MaceInputError(Exception):
+    '''Custom exception for capturing the known errors'''
+    def __init__(self, message):
+        super().__init__('Input error: ' + message)
+
+
 def read_args():
     '''Reads CLI arguments'''
     # parser
@@ -106,7 +112,7 @@ def read_args():
     # get arguments
     args = parser.parse_args()
     if not os.path.isdir(args.path_dir):
-        raise RuntimeError(f'\nError: output directory does not exist: {args.path_dir}\n')
+        raise MaceInputError(f'Output directory does not exist: {args.path_dir}')
     
     return args
 
@@ -116,7 +122,7 @@ def main():
     # get arguments
     try:
         args = read_args()
-    except RuntimeError as e:
+    except MaceInputError as e:
         print(e)
         sys.exit()
     # save files

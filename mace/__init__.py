@@ -27,6 +27,7 @@ from ._substituents import AddSubsToMol
 from ._complex_object import Complex
 from ._complex_init_mols import ComplexFromMol, ComplexFromLigands
 from ._complex_init_files import ComplexFromXYZFile
+from . import cli
 
 # package info
 __author__ = "Ivan Yu. Chernyshov"
@@ -37,10 +38,11 @@ __version__ = '0.4.3'
 __all__ = [
     'Complex',
     'ComplexFromMol', 'ComplexFromLigands', 'ComplexFromXYZFile',
-    'MolFromSmiles', 'MolToSmiles', 'AddSubsToMol'
+    'MolFromSmiles', 'MolToSmiles', 'AddSubsToMol',
+    'cli'
 ]
 
 # disable logger
-from rdkit import RDLogger
-RDLogger.DisableLog('rdApp.*')
+from rdkit import RDLogger as _RDLogger
+_RDLogger.DisableLog('rdApp.*')
 

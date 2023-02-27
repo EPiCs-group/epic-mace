@@ -20,7 +20,13 @@ setuptools.setup(
       url = 'http://github.com/EPiCs-group/mace',
       author = 'Ivan Yu. Chernyshov',
       author_email = 'ivan.chernyshoff@gmail.com',
-      packages = ['mace'],
+      packages = setuptools.find_packages(),
+      entry_points = {
+          'console_scripts': [
+              'epic-mace = mace.cli:generator',
+              'epic-mace-quickstart = mace.cli:quickstart'
+          ]
+      },
       install_requires = [
           'numpy',
           'pyyaml'

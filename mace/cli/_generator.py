@@ -6,11 +6,17 @@ import re, sys, os
 import argparse, yaml
 from itertools import product
 
-sys.path.insert(0, os.path.abspath('../')) # XXX: remove in final version
+#sys.path.insert(0, os.path.abspath('../../')) # XXX: remove in final version
 import mace
 
 
 #%% Preparing arguments
+
+class MaceInputError(Exception):
+    '''Custom exception for capturing the known errors'''
+    def __init__(self, message):
+        super().__init__('Input error: ' + message)
+
 
 def get_parser():
     '''Generates CLI parser'''
@@ -148,7 +154,7 @@ def read_subs(unknown):
     '''Extracts Rs from unknown arguments'''
     idxs = [int(arg[3:]) for arg in unknown if re.search('^--R\d+$', arg)]
     if 0 in idxs:
-        raise ValueError('Input error: --R0 substituent is forbidden; use --R1, etc.')
+        raise MaceInputError('--R0 substituent is forbidden; use --R1, etc.')
     # set parser
     subs = argparse.ArgumentParser(prog = 'epic-mace') # prog name for errors
     for idx in sorted(idxs):
@@ -162,12 +168,12 @@ def read_subs(unknown):
 def get_args_from_file(path):
     '''Extracts script parameters from an input file'''
     if not os.path.isfile(path):
-        raise ValueError('Error: specified input file does not exist')
+        raise MaceInputError('Specified input file does not exist')
     with open(path, 'r') as inpf:
         try:
             args = yaml.safe_load(inpf)
         except Exception as e:
-            raise ValueError('Input error: bad-formatted input file:\n' + str(e))
+            raise MaceInputError('Bad-formatted input file:\n' + str(e))
     
     return args
 
@@ -226,14 +232,14 @@ def check_sub(smiles, name):
     try:
         mol = mace.MolFromSmiles(smiles)
     except Exception: # as e:
-        raise ValueError(f'Bad substituent {name}: {smiles}\nCannot read the SMILES string')
+        raise MaceInputError(f'Bad substituent {name}: {smiles}\nCannot read the SMILES string')
     dummies = [_ for _ in mol.GetAtoms() if _.GetSymbol() == '*']
     if len(dummies) != 1:
-        raise ValueError(f'Bad substituent {name}: {smiles}\nSubstituent must contain exactly one dummy atom')
+        raise MaceInputError(f'Bad substituent {name}: {smiles}\nSubstituent must contain exactly one dummy atom')
     if len(dummies[0].GetNeighbors()) != 1:
-        raise ValueError(f'Bad substituent {name}: {smiles}\nSubstituent\'s dummy must be bonded to exactly one atom by single bond')
+        raise MaceInputError(f'Bad substituent {name}: {smiles}\nSubstituent\'s dummy must be bonded to exactly one atom by single bond')
     if str(dummies[0].GetBonds()[0].GetBondType()) != 'SINGLE':
-        raise ValueError(f'Bad substituent {name}: {smiles}\nSubstituent\'s dummy must be bonded to exactly one atom by single bond')
+        raise MaceInputError(f'Bad substituent {name}: {smiles}\nSubstituent\'s dummy must be bonded to exactly one atom by single bond')
     
     return
 
@@ -252,12 +258,12 @@ def get_subs(args, struct):
     Rs_inp = set([k for k in args if re.search('^R\d+$', k)])
     if Rs_mol.difference(Rs_inp):
         diff = ', '.join(Rs_mol.difference(Rs_inp))
-        msg = f'some substituents are not defined in the input: {{{diff}}}'
-        raise ValueError(f'Input error: {msg}')
+        msg = f'Some substituents are not defined in the input: {{{diff}}}'
+        raise MaceInputError(msg)
     if Rs_inp.difference(Rs_mol):
         diff = ', '.join(Rs_inp.difference(Rs_mol))
-        msg = f'excessive substituents in the input: {{{diff}}}'
-        raise ValueError(f'Input error: {msg}')
+        msg = f'Excessive substituents in the input: {{{diff}}}'
+        raise MaceInputError(msg)
     # check if empty
     Rs = sorted(list(Rs_mol))
     if not Rs:
@@ -265,22 +271,22 @@ def get_subs(args, struct):
     # read a file
     path = args['substituents_file']
     if not os.path.exists(path):
-        raise ValueError(f'Input error: substituent file does not exist: {path}')
+        raise MaceInputError(f'Substituent file does not exist: {path}')
     with open(path, 'r') as inpf:
         try:
             subs_info = yaml.safe_load(inpf)
         except Exception as e:
-            raise ValueError('Input error: bad-formatted substituents file:\n' + str(e))
+            raise MaceInputError('Bad-formatted substituents file:\n' + str(e))
     # prepare subs
     outp = {}
     for R in Rs:
         subs = args[R]
         addend = []
         if len(subs) != len(set(subs)):
-            raise ValueError(f'Input error: repeating substituent in --{R}')
+            raise MaceInputError(f'Repeating substituent in --{R}')
         for sub in subs:
             if sub not in subs_info:
-                raise ValueError(f'Input error: missing substituent {sub}, please define it in substituents file')
+                raise MaceInputError(f'Missing substituent {sub}, please define it in substituents file')
             smiles = subs_info[sub]
             check_sub(smiles, sub)
             addend.append( (sub, smiles) )
@@ -294,21 +300,21 @@ def check_arguments(args):
     params = {}
     # check output dir
     if not os.path.isdir(args['out_dir']):
-        raise ValueError('Input error: specified output directory does not exist')
+        raise MaceInputError('Specified output directory does not exist')
     params['out_dir'] = args['out_dir']
     
     # check structure
     for key in ('name', 'geom'):
         if not args[key]:
-            raise ValueError(f'Input error: --{key} is not specified')
+            raise MaceInputError(f'--{key} is not specified')
         params[key] = args[key]
     # check mutually exclusive params in structure
     has_complex = bool(args['complex'])
     has_ligands = args['ligands'] and args['CA']
     if not has_complex and not has_ligands:
-        raise ValueError('Input error: neither --complex nor --ligands and --CA are not specified')
+        raise MaceInputError('Neither --complex nor --ligands and --CA are not specified')
     if has_complex and has_ligands:
-        raise ValueError('Input error: both --complex and (--ligands, --CA) are specified')
+        raise MaceInputError('Both --complex and (--ligands, --CA) are specified')
     # check SMILES
     if has_complex:
         # --complex
@@ -316,7 +322,7 @@ def check_arguments(args):
             smiles = args['complex']
             _ = mace.MolFromSmiles(smiles)
         except Exception: # as e:
-            raise ValueError(f'Input error: --complex: unreadable SMILES: {smiles}')
+            raise MaceInputError(f'--complex: unreadable SMILES: {smiles}')
         params['complex'] = args['complex']
     elif has_ligands:
         # --ligands
@@ -324,41 +330,41 @@ def check_arguments(args):
             for smiles in args['ligands']:
                 _ = mace.MolFromSmiles(smiles)
         except Exception: # as e:
-            raise ValueError(f'Input error: --ligands: unreadable SMILES: {smiles}')
+            raise MaceInputError(f'--ligands: unreadable SMILES: {smiles}')
         params['ligands'] = args['ligands']
         # --CA
         try:
             smiles = args['CA']
             _ = mace.MolFromSmiles(smiles)
         except Exception: # as e:
-            raise ValueError(f'Input error: --CA: unreadable SMILES: {smiles}')
+            raise MaceInputError(f'--CA: unreadable SMILES: {smiles}')
         params['CA'] = args['CA']
     # resonance
     if args['res_structs'] < 1:
-        raise ValueError('InputError: --res-structs must be a positive integer')
+        raise MaceInputError('--res-structs must be a positive integer')
     params['res_structs'] = args['res_structs']
     
     # stereomer search
     if args['trans_cycle'] is not None:
         if args['trans_cycle'] < 1:
-            raise ValueError('InputError: --trans-cycle must be a positive integer')
+            raise MaceInputError('--trans-cycle must be a positive integer')
     # no need to check others
     for key in ('regime', 'get_enantiomers', 'trans_cycle', 'mer_rule'):
         params[key]  = args[key]
     
     # 3D generation
     if args['num_confs'] < 1:
-        raise ValueError('InputError: --num-confs must be a positive integer')
+        raise MaceInputError('--num-confs must be a positive integer')
     if args['rms_thresh'] < 0:
-        raise ValueError('InputError: --rms-thresh must be a positive real number')
+        raise MaceInputError('--rms-thresh must be a positive real number')
     for key in ('num_confs', 'rms_thresh'):
         params[key] = args[key]
     
     # 3D post-processing
     if args['num_repr_confs'] is not None and args['num_repr_confs'] < 1:
-        raise ValueError('InputError: --num-repr-confs must be a positive integer')
+        raise MaceInputError('--num-repr-confs must be a positive integer')
     if args['e_rel_max'] < 0:
-        raise ValueError('InputError: --e-rel-max must be a positive real number')
+        raise MaceInputError('--e-rel-max must be a positive real number')
     for key in ('num_repr_confs', 'e_rel_max', 'drop_close_energy'):
         params[key] = args[key]
     
@@ -465,7 +471,7 @@ def run_mace_for_system(X, fullname, params):
     # stereomers
     if params['regime'] == 'none':
         if X.err_init:
-            raise ValueError(f'Input error: {fullname}:\n{X.err_init}')
+            raise MaceInputError(f'{fullname}:\n{X.err_init}')
         Xs = [X]
     else:
         Xs = X.GetStereomers(params['regime'], not params['get_enantiomers'],
@@ -501,7 +507,7 @@ def main():
     '''Main function (error handler for _main)'''
     try:
         _main()
-    except Exception as e:
+    except MaceInputError as e:
         print(e)
         sys.exit()
     
