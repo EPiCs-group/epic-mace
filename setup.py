@@ -23,8 +23,8 @@ setuptools.setup(
       packages = setuptools.find_packages(),
       entry_points = {
           'console_scripts': [
-              'epic-mace = mace.cli:generator',
-              'epic-mace-quickstart = mace.cli:quickstart'
+              'epic-mace = mace.__main__:main',
+              'epic-mace-quickstart = mace._cli_quickstart:main'
           ]
       },
       install_requires = [

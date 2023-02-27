@@ -6,7 +6,6 @@ import re, sys, os
 import argparse, yaml
 from itertools import product
 
-#sys.path.insert(0, os.path.abspath('../../')) # XXX: remove in final version
 import mace
 
 
