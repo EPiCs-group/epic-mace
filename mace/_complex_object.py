@@ -500,10 +500,22 @@ class Complex():
             mols = [m for i, m in enumerate(mols) if i not in drop]
         # generate all CA isomers
         if regime == 'ligands':
-            # transform mols to Complex objects and return them
+            # transform mols to Complex objects
             stereomers = []
             for m in mols:
                 stereomers.append( Complex(Chem.MolToSmiles(m), self.geom, self.maxResonanceStructures) )
+            # filter enantiomers
+            drop = []
+            for i in range(len(stereomers)-1):
+                if i in drop:
+                    continue
+                for j in range(i+1, len(stereomers)):
+                    if stereomers[i].IsEqual(stereomers[j]):
+                        drop.append(j)
+                    elif dropEnantiomers and stereomers[i].IsEnantiomer(stereomers[j]):
+                        drop.append(j)
+            stereomers = [compl for i, compl in enumerate(stereomers) if i not in drop]
+            # return them
             return stereomers
         # find restrictions on DA positions
         pairs = self._FindNeighboringDAs(minTransCycle)

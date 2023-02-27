@@ -1,0 +1,30 @@
+# output directory
+out_dir: ./
+# structure
+name: RhCl_MeCN_bipy
+geom: SP
+res-structs: 1
+# define structure via ligands & CA
+ligands:
+- "[1*]C1=C[N:4]=C(C=C1)C1=[N:3]C=C([1*])C=C1"
+- "[N:2]#CC"
+- "[Cl-:1]"
+CA: "[Rh+]"
+# stereomer-search
+regime: none
+get-enantiomers: false
+trans-cycle: no
+mer-rule: true
+# conformer-generation
+num-confs: 3
+rms-thresh: 1.0
+# conformer post-processing
+num-repr-confs: 1
+e-rel-max: 25.0
+drop-close-energy: true
+# substituents
+substituents-file: ../default_subs.yaml
+R1:
+- H
+- NMe2
+- OMe

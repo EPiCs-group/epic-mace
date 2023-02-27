@@ -370,8 +370,7 @@ def check_arguments(args):
     # get subs
     struct = 'complex' if 'complex' in params else 'ligands'
     subs = get_subs(args, struct)
-    if subs:
-        params['subs'] = subs
+    params['subs'] = subs
     
     return params
 
@@ -387,23 +386,32 @@ def prepare_complexes(params):
         params['complex'] = mace.MolToSmiles(X.mol)
     # add subs
     core = mace.MolFromSmiles(params['complex'])
-    Rs = list(params['subs'].keys())
     systems = []
-    for subs_info in product(*params['subs'].values()):
-        # prepare subs
-        sub_names, sub_smis = zip(*subs_info)
-        fullname = f'{params["name"]}_{"_".join(sub_names)}'
-        subs = {R: mace.MolFromSmiles(smi) for R, smi in zip(Rs, sub_smis)}
-        # get base complex
-        mol = mace.AddSubsToMol(core, subs)
-        X = mace.ComplexFromMol(mol, params['geom'], params['res_structs'])
-        # reset map numbers
-        if params['regime'] != 'none':
+    if not params['subs']:
+        X = mace.ComplexFromMol(core, params['geom'], params['res_structs'])
+        if params['regime'] not in ('none', 'ligands'):
             for idx in X._DAs:
                 X.mol.GetAtomWithIdx(idx).SetAtomMapNum(1)
                 X.mol.GetAtomWithIdx(idx).SetIsotope(1)
             X = mace.ComplexFromMol(X.mol, X.geom)
-        systems.append( (fullname, X) )
+        systems.append( (params['name'], X) )
+    else:
+        Rs = list(params['subs'].keys())
+        for subs_info in product(*params['subs'].values()):
+            # prepare subs
+            sub_names, sub_smis = zip(*subs_info)
+            fullname = f'{params["name"]}_{"_".join(sub_names)}'
+            subs = {R: mace.MolFromSmiles(smi) for R, smi in zip(Rs, sub_smis)}
+            # get base complex
+            mol = mace.AddSubsToMol(core, subs)
+            X = mace.ComplexFromMol(mol, params['geom'], params['res_structs'])
+            # reset map numbers
+            if params['regime'] != 'none':
+                for idx in X._DAs:
+                    X.mol.GetAtomWithIdx(idx).SetAtomMapNum(1)
+                    X.mol.GetAtomWithIdx(idx).SetIsotope(1)
+                X = mace.ComplexFromMol(X.mol, X.geom)
+            systems.append( (fullname, X) )
     # get repeating complexes
     repeats = []
     if params['regime'] == 'none':
@@ -459,7 +467,8 @@ def save_isomers(Xs, fullname, params):
     # print info message
     msg = f'{fullname}: found {info["n_iso"]} isomers'
     if info['no_confs']:
-        msg += f'; no confs generated for isomers ## {", ".join(info["no_confs"])}'
+        bad_idxs = ', '.join([str(_) for _ in info["no_confs"]])
+        msg += f'; no confs generated for isomers ## {bad_idxs}'
     print(msg)
     
     return

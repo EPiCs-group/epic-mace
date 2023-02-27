@@ -1,0 +1,20 @@
+# output directory
+out_dir: ./
+# structure
+name: RhCl_MeCN_bipy
+geom: SP
+res-structs: 1
+# define structure via complex
+complex: "[Cl-:1]->[Rh+]<-1(<-[N:2]#CC)<-[N:3]2=CC=CC=C2C2=[N:4]1C=CC=C2"
+# stereomer-search
+regime: none
+get-enantiomers: false
+trans-cycle: no
+mer-rule: true
+# conformer-generation
+num-confs: 3
+rms-thresh: 1.0
+# conformer post-processing
+num-repr-confs: 1
+e-rel-max: 25.0
+drop-close-energy: true

@@ -12,6 +12,9 @@ source:
 build:
   number: 0
   script: "{{ PYTHON }} -m pip install . -vv"
+#  entry_points:
+#    - epic-mace = mace.__main__:main
+#    - epic-mace-quickstart = mace._cli_quickstart:main
 
 requirements:
   host:
