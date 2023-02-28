@@ -1,0 +1,23 @@
+# output directory
+out_dir: ./
+# structure
+name: PtCl2_NxN_trans_off
+geom: SP
+res-structs: 1
+ligands:
+  - "[NH2:1]CCOCCOCCOCCOCC[NH2:1]"
+  - "[Cl-:1]"
+  - "[Cl-:1]"
+CA: "[Pt+2]"
+# stereomer-search
+regime: all
+get-enantiomers: false
+trans-cycle: no
+mer-rule: true
+# conformer-generation
+num-confs: 10
+rms-thresh: 1.0
+# conformer post-processing
+num-repr-confs: 3
+e-rel-max: 25.0
+drop-close-energy: true
