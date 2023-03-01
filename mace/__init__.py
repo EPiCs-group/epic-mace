@@ -31,7 +31,7 @@ from ._complex_init_files import ComplexFromXYZFile
 # package info
 __author__ = "Ivan Yu. Chernyshov"
 __email__ = "ivan.chernyshoff@gmail.com"
-__version__ = '0.4.3'
+__version__ = '0.5.0'
 
 # module functions
 __all__ = [

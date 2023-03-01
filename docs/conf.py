@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('../'))
 project = 'epic-mace'
 copyright = '2023, Ivan Yu. Chernyshov'
 author = 'Ivan Yu. Chernyshov'
-release = '0.4.2'
+release = '0.5.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -48,8 +48,8 @@ html_static_path = ['_static']
 html_theme_options = {
     'logo_only': False,
 }
-html_logo = 'images/mace_favicon.png'
-html_favicon = 'images/mace_favicon.png'
+html_logo = 'source/images/mace_favicon.png'
+html_favicon = 'source/images/mace_favicon.png'
 
 
 # -- Options for exts ----------------------------------------------

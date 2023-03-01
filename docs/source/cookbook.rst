@@ -1,4 +1,4 @@
-Tutorial
+Cookbook
 ========
 
 MACE is an open source toolkit for the automated screening and discovery of octahedral
