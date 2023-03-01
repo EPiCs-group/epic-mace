@@ -49,14 +49,14 @@ TEXT_INPUT = '''# example of epic-mace input file
 out_dir: ./
 
 # structure
-name: Pd_bipy
+name: RhCl_MeCN_bipy
 geom: SP
 res-structs: 1
 # define structure via ligands & CA
 ligands:
-- "[*]C1=C[N:4]=C(C=C1)C1=[N:3]C=C([*])C=C1 |$_R1;;;;;;;;;;;_R2;;$,c:3,5,13,t:1,8,10|"
-- "[N:2]#CC"
-- "[Cl-:1]"
+  - "[*]C1=C[N:4]=C(C=C1)C1=[N:3]C=C([*])C=C1 |$_R1;;;;;;;;;;;_R2;;$,c:3,5,13,t:1,8,10|"
+  - "[N:2]#CC"
+  - "[Cl-:1]"
 CA: "[Rh+]"
 ## via complex (use either ligands & CA or complex)
 #complex: "[Cl-:1][Rh+]1([N:2]#CC)[N:3]2=CC([*])=CC=C2C2=[N:4]1C=C([*])C=C2 |$;;;;;;;;_R2;;;;;;;;_R1;;$,c:8,10,19,t:5,16,C:0.0,2.1,5.4,13.14|"
@@ -79,13 +79,13 @@ drop-close-energy: true # false
 # substituents
 substituents-file: substituents.yaml # default
 R1: # name: SMILES must be defined in substituents file
-- H
-- NMe2
-- OMe
+  - H
+  - NMe2
+  - OMe
 R2:
-- H
-- CN
-- NO2
+  - H
+  - CN
+  - NO2
 
 '''
 
