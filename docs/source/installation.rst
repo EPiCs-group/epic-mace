@@ -6,7 +6,7 @@ Installation
     
     Earlier versions do not support dative bonds, and in later versions there are
     significant changes in the embedding and symmetry processing algorithms
-    which are not well compatible with the MACE's underlying algorithms.
+    which are not well compatible with the **epic-mace**'s underlying algorithms.
     This noticeably increases number of errors for both stereomer search and 3D embedding.
 
 

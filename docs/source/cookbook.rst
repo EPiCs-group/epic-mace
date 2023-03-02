@@ -1,5 +1,5 @@
-Cookbook
-========
+Package cookbook
+================
 
 MACE is an open source toolkit for the automated screening and discovery of octahedral
 and square-planar mononuclear complexes. The software generates all possible configurations
