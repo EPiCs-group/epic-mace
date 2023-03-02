@@ -1,3 +1,5 @@
+.. _input link:
+
 Input SMILES
 ============
 
@@ -43,15 +45,15 @@ ChemAxon Marvin
 For those who is familiar with the practical side of chemoinformatics, getting SMILES will not be a problem.
 For others the easiest way is to use the `ChemAxon Marvin`_ chemical editor:
 
-    1. To set map numbers, right click on the atom and select the **map** option.
+    1. To set map numbers, right click on the atom and select the :guilabel:`map` option.
 
-    2. To add dummy atoms describing substituents, use the **R-group** option.
+    2. To add dummy atoms describing substituents, use the :guilabel:`R-group` option.
 
-    3. To save the structure in SMILES format, select the molecule, right click on it and select **Save as**. Use ChemAxon SMILES for metal complexes and Daylight SMILES for ligands.
+    3. To save the structure in SMILES format, select the molecule, right click on it and select :guilabel:`Save as`. Use ChemAxon SMILES for metal complexes and Daylight SMILES for ligands.
 
     .. image:: images/marvin_get_smiles.png
 
-    4. Now the SMILES string is copied to the clipboard and can be pasted via the **Ctrl+V** keyboard shortcut.
+    4. Now the SMILES string is copied to the clipboard and can be pasted via the :kbd:`Ctrl+V` keyboard shortcut.
 
 .. _SMILES: https://www.daylight.com/dayhtml/doc/theory/theory.smiles.html
 .. _RDKit SMILES extension: https://www.rdkit.org/docs/RDKit_Book.html#smiles-support-and-extensions

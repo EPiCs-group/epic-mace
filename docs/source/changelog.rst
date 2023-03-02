@@ -16,7 +16,7 @@ The first tracked version. The main features are:
     
     - the :meth:`mace.Complex.GetBondedLigand` method extracting geometry of coordinated ligand (to use in molSimplify).
   
-  - The :func:`mace.ComplexFromXYZ` function reading complex from the **epic-mace**-generated xyz-file.
+  - The :func:`mace.ComplexFromXYZFile` function reading complex from the **epic-mace**-generated xyz-file.
   
   - The :func:`mace.AddSubsToMol` function functionalizing ligands and complexes by adding substituents.
   

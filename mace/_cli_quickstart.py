@@ -69,7 +69,7 @@ mer-rule: true # false
 
 # conformer-generation
 num-confs: 3
-rms-thresh: 1.0 # if -1, not rms filtering
+rms-thresh: 1.0
 
 # conformer post-processing
 num-repr-confs: no # or positive integer

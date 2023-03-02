@@ -109,13 +109,12 @@ def get_parser():
         description = 'Parameters of generation of 3D atomic coordinates'
     )
     confs.add_argument(
-        '--num-confs', type = int, default = 20,
+        '--num-confs', type = int, default = 10,
         help = 'number of conformers to generate'
     )
     confs.add_argument(
-        '--rms-thresh', type = float, default = None,
-        help = 'drops one of two conformers if their RMSD is less than this threshold. '
-               'If not specified, all generated conformers are returned'
+        '--rms-thresh', type = float, default = 0.0,
+        help = 'drops one of two conformers if their RMSD is less than this threshold.'
     )
     # conformers filtration
     confs = parser.add_argument_group(
@@ -134,7 +133,7 @@ def get_parser():
     confs.add_argument(
         '--drop-close-energy', action = 'store_true',
         help = 'if specified, drops one of two conformers with difference in energy '
-               'less than 0.02 kJ/mol'
+               'less than 0.1 kJ/mol'
     )
     # substituents
     subs = parser.add_argument_group(

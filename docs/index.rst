@@ -20,7 +20,7 @@ Welcome to epic-mace's documentation!
 .. toctree::
    :hidden:
    :maxdepth: 2
-   :caption: How-To
+   :caption: How To
    
    source/cookbook
    source/cli
@@ -80,4 +80,4 @@ Indices and tables
 .. _PyPI package: https://pypi.org/project/epic-mace/
 .. _conda package: https://anaconda.org/grimgenius/epic-mace
 .. _Performance testing: https://github.com/EPiCs-group/epic-mace/blob/master/performance/README.ipynb
-.. _CLI examples: https://github.com/EPiCs-group/epic-mace/blob/master/examples
+.. _CLI examples: https://github.com/EPiCs-group/epic-mace/tree/master/examples
