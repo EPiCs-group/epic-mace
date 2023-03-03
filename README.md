@@ -5,10 +5,9 @@ MACE is an open source toolkit for the automated screening and discovery of meta
 
 ## Installation
 
-> **Warning**
 > **epic-mace** requires Python 3.7 and the 2020.09 version of RDKit for a correct functioning!
-> 
-> Earlier versions do not support dative bonds, and in later versions there are significant changes in the embedding and symmetry processing algorithms which are not well compatible with the **epic-mace**’s underlying algorithms. This noticeably increases number of errors for both stereomer search and 3D embedding.
+
+Earlier versions do not support dative bonds, and in later versions there are significant changes in the embedding and symmetry processing algorithms which are not well compatible with the **epic-mace**’s underlying algorithms. This noticeably increases number of errors for both stereomer search and 3D embedding.
 
 ### conda
 
