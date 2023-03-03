@@ -1,0 +1,25 @@
+# output directory
+out_dir: ./
+# structure
+name: MnCNP_NP
+geom: OH
+res-structs: 1
+ligands:
+  - "C[N:1](CC[N+]1=[C-]N(C=C1)C1=C(C)C=C(C)C=C1C)CC1=CC=CC=C1[P:1](C1=CC=CC=C1)C1=CC=CC=C1"
+  - "[C-:1]#[O+]"
+  - "[C-:1]#[O+]"
+  - "[C-:1]#[O+]"
+  - "[H-:1]"
+CA: "[Mn+]"
+# stereomer-search
+regime: all
+get-enantiomers: false
+trans-cycle: no
+mer-rule: true
+# conformer-generation
+num-confs: 50
+rms-thresh: 1.0
+# conformer post-processing
+num-repr-confs: 6
+e-rel-max: 25.0
+drop-close-energy: true

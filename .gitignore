@@ -1,3 +1,10 @@
+# package testing
+untitled0.py
+
+# CLI testing
+mace_input.yaml
+substituents.yaml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

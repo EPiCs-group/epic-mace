@@ -28,6 +28,11 @@ from ._complex_object import Complex
 from ._complex_init_mols import ComplexFromMol, ComplexFromLigands
 from ._complex_init_files import ComplexFromXYZFile
 
+# package info
+__author__ = "Ivan Yu. Chernyshov"
+__email__ = "ivan.chernyshoff@gmail.com"
+__version__ = '0.5.0'
+
 # module functions
 __all__ = [
     'Complex',
@@ -36,6 +41,6 @@ __all__ = [
 ]
 
 # disable logger
-from rdkit import RDLogger
-RDLogger.DisableLog('rdApp.*')
+from rdkit import RDLogger as _RDLogger
+_RDLogger.DisableLog('rdApp.*')
 

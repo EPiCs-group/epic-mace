@@ -10,6 +10,8 @@ import json
 from copy import deepcopy
 from itertools import product, combinations
 
+import numpy as np
+
 from rdkit import Chem
 from rdkit.Chem import AllChem
 #from rdkit.Geometry.rdGeometry import Point3D
@@ -498,10 +500,22 @@ class Complex():
             mols = [m for i, m in enumerate(mols) if i not in drop]
         # generate all CA isomers
         if regime == 'ligands':
-            # transform mols to Complex objects and return them
+            # transform mols to Complex objects
             stereomers = []
             for m in mols:
                 stereomers.append( Complex(Chem.MolToSmiles(m), self.geom, self.maxResonanceStructures) )
+            # filter enantiomers
+            drop = []
+            for i in range(len(stereomers)-1):
+                if i in drop:
+                    continue
+                for j in range(i+1, len(stereomers)):
+                    if stereomers[i].IsEqual(stereomers[j]):
+                        drop.append(j)
+                    elif dropEnantiomers and stereomers[i].IsEnantiomer(stereomers[j]):
+                        drop.append(j)
+            stereomers = [compl for i, compl in enumerate(stereomers) if i not in drop]
+            # return them
             return stereomers
         # find restrictions on DA positions
         pairs = self._FindNeighboringDAs(minTransCycle)
@@ -1083,6 +1097,59 @@ class Complex():
         return Es[i][1]
     
     
+    def OrderConfsByEnergy(self):
+        '''Orders conformers by their MM energy'''
+        # get new confIds order
+        N = self.GetNumConformers()
+        Es = [(self.GetConfEnergy(idx), idx) for idx in range(N)]
+        i2i = [i for E, i in sorted(Es)]
+        # reorder confs (i => N + new_i => new_i to avoid conflicts between new and old idxs)
+        for mol in ('mol3Dx', 'mol3D', 'mol'):
+            for i in range(N):
+                getattr(self, mol).GetConformer(i2i[i]).SetId(N + i)
+            for i in range(N):
+                getattr(self, mol).GetConformer(N + i).SetId(i)
+        
+        return
+    
+    
+    def GetRepresentativeConfs(self, numConfs = 5, dE = 25.0, dropCloseEnergy = True):
+        '''Returns IDs of approximately most distant conformers (greedy approach)
+        
+        Arguments:
+            numConfs (int): maximal number of conformers to select;
+            dE (float): maximal allowed relative energy of conformer;
+            dropCloseEnergy (bool): drops conformers with close energy (delta-E < 0.1).
+        
+        Returns:
+            List[int]: list of conformers' IDs
+        '''
+        # drop high-energy confs
+        idxs = sorted([conf.GetId() for conf in self.mol3D.GetConformers()])
+        Es = [self.GetConfEnergy(idx) for idx in idxs]
+        Emin = min(Es)
+        idxs = [(E, idx) for idx, E in zip(idxs, Es) if E - Emin < dE]
+        if dropCloseEnergy:
+            drop = [i for i in range(1, len(idxs)) if idxs[i][0]-idxs[i-1][0] < 0.1]
+            idxs = [(E, idx) for i, (E, idx) in enumerate(idxs) if i not in drop]
+        idxs = [idx for E, idx in sorted(idxs)]
+        if len(idxs) <= numConfs:
+            return idxs
+        # get RMSD matrix
+        M = np.zeros( [len(idxs), len(idxs)] )
+        for (i, ii), (j, jj) in combinations(enumerate(idxs), 2):
+            Chem.rdMolAlign.AlignMolConformers(self.mol, confIds = [ii, jj])
+            M[i,j] = M[j,i] = Chem.rdMolAlign.CalcRMS(self.mol, self.mol, ii, jj)
+        # greedy selection
+        picked = [0]
+        while len(picked) < numConfs:
+            SM = M[:,picked]
+            picked.append(np.argmax(np.min(SM, axis = 1)[1:]) + 1)
+        idxs = [idx for i, idx in enumerate(idxs) if i in picked]
+        
+        return idxs
+    
+    
     def AddConformers(self, numConfs = 10, clearConfs = True,
                       useRandomCoords = True, maxAttempts = 10,
                       rmsThresh = -1):
@@ -1291,54 +1358,72 @@ class Complex():
         return '\n'.join(text)+'\n'
     
     
-    def ToXYZBlock(self, confId = 'all'):
-        '''Generates text block of (multiple) XYZ file
+    def ToXYZBlock(self, confId = None):
+        '''Generates text block of XYZ file
         
         Arguments:
-            confId (Union[str,int]): which conformers must be included:
-                    - 'min' or -1: conformer with the lowest energy;
-                    - 'min(i)': conformer with i-th lowest energy;
-                    - i >= 0: i-th conformer;
-                    - 'all' or -2: all conformers.
+            confId (Optional[int]): conformer Id; if None, 0-th conformer is saved
         
         Returns:
-            str: text block of the (multiple) XYZ file
+            str: text block of the XYZ file
         '''
         self._RaiseErrorInit()
         N = self.mol3D.GetNumConformers()
         if not N:
             raise ValueError('Bad conformer ID: complex has no conformers')
         # prepare conf idxs
-        if confId in (-2, 'all'):
-            conf_idxs = list(range(N))
-        elif confId in (-1, 'min'):
-            conf_idxs = [self.GetMinEnergyConfId(0)]
-        elif str(confId)[:4] == 'min(' and str(confId)[-1] == ')':
-            idx = str(confId)[4:-1]
-            if not idx.isdigit():
-                raise ValueError(f'Bad confId values: {confId}')
-            conf_idxs = [self.GetMinEnergyConfId(int(idx))]
-        else:
-            conf_idxs = [confId]
+        if confId is None:
+            confId = 0
+        
+        return self._ConfToXYZ(confId)
+    
+    
+    def ToMultipleXYZBlock(self, confIds = None):
+        '''Generates text block of multiple XYZ file
+        
+        Arguments:
+            confIds (Optional[List[int]]): ordered list of conformer Ids
+                to include in XYZ-block. If None, all conformers are saved
+        
+        Returns:
+            str: text block of the multiple XYZ file
+        '''
+        self._RaiseErrorInit()
+        N = self.mol3D.GetNumConformers()
+        if not N:
+            raise ValueError('Bad conformer ID: complex has no conformers')
+        # prepare conf idxs
+        if confIds is None:
+            confIds = sorted([conf.GetId() for conf in self.mol3D.GetConformers()])
+        # get text
         text = ''
-        for conf_id in conf_idxs:
-            text += self._ConfToXYZ(conf_id)
+        for confId in confIds:
+            text += self._ConfToXYZ(confId)
         
         return text
     
     
-    def ToXYZ(self, path, confId = -2):
-        '''Saves complex as (multiple) XYZ file
+    def ToXYZ(self, path, confId = None):
+        '''Saves complex as XYZ file
         
         Arguments:
             path (str): file path;
-            confId (Union[str,int]): which conformers must be included"
-                    - 'min' or -1: conformer with the lowest energy;
-                    - 'min(i)': conformer with i-th lowest energy;
-                    - i >= 0: i-th conformer;
-                    - 'all' or -2: all conformers.
+            confIds (Optional[int]): conformer Id; if None, 0-th conformer is saved
         '''
         text = self.ToXYZBlock(confId)
+        with open(path, 'w') as outf:
+            outf.write(text)
+    
+    
+    def ToMultipleXYZ(self, path, confIds = None):
+        '''Saves complex as multiple XYZ file
+        
+        Arguments:
+            path (str): file path;
+            confIds (Optional[List[int]]): ordered list of conformer Ids
+                to include in XYZ-block. If None, all conformers are saved
+        '''
+        text = self.ToMultipleXYZBlock(confIds)
         with open(path, 'w') as outf:
             outf.write(text)
 

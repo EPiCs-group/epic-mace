@@ -1,0 +1,21 @@
+# output directory
+out_dir: ./
+# structure
+name: Fe_clatrochelate_mer_on
+geom: OH
+res-structs: 1
+ligands:
+  - "C[B-]12O[N:1]=C(Cl)C(Cl)=[N:1]O[B-](C)(O[N:1]=C(Cl)C(Cl)=[N:1]O1)O[N:1]=C(Cl)C(Cl)=[N:1]O2"
+CA: "[Fe+2]"
+# stereomer-search
+regime: all
+get-enantiomers: false
+trans-cycle: no
+mer-rule: true
+# conformer-generation
+num-confs: 3
+rms-thresh: 1.0
+# conformer post-processing
+num-repr-confs: 1
+e-rel-max: 25.0
+drop-close-energy: true
