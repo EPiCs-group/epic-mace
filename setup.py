@@ -11,7 +11,7 @@ setuptools.setup(
       long_description_content_type = 'text/markdown',
       license = 'GPLv3+',
       classifiers = [
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 4 - Beta',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Programming Language :: Python :: 3',
         'Topic :: Scientific/Engineering :: Chemistry',
