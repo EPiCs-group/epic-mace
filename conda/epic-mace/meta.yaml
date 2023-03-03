@@ -6,15 +6,15 @@ package:
   version: "{{ version }}"
 
 source:
-  url: https://files.pythonhosted.org/packages/de/82/9a24da420cd347970509404389aecd9de4ebd671bce56b76a7cd76ec1428/epic_mace-0.4.2.tar.gz
-  sha256: 361cb0c78b89259bb6a8922f707f543eb292b8c16a952c1caa9e28462dd09e4b
+  url: https://files.pythonhosted.org/packages/7d/ff/3c6019615318e20345af2a854aba2138fbb3f97055897656e20a24b9b182/epic_mace-0.5.0.tar.gz
+  sha256: d59bf7986f5e5c00137ffb07b01f04f7ae022d7a73c995b0f6bb5efb720b9e21
 
 build:
   number: 0
   script: "{{ PYTHON }} -m pip install . -vv"
-#  entry_points:
-#    - epic-mace = mace.__main__:main
-#    - epic-mace-quickstart = mace._cli_quickstart:main
+  entry_points:
+    - epic-mace = mace.__main__:main
+    - epic-mace-quickstart = mace._cli_quickstart:main
 
 requirements:
   host:
