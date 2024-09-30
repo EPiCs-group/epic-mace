@@ -1,6 +1,12 @@
 # MACE: MetAl Complexes Embedding
 
+![paper](misc/paper.png)
+
 MACE is an open source toolkit for the automated screening and discovery of metal complexes. MACE is developed by [Ivan Chernyshov](https://github.com/IvanChernyshov) as part of the [Evgeny Pidko Group](https://www.tudelft.nl/en/faculty-of-applied-sciences/about-faculty/departments/chemical-engineering/principal-scientists/evgeny-pidko/evgeny-pidko-group) in the [Department of Chemical Engineering](https://www.tudelft.nl/en/faculty-of-applied-sciences/about-faculty/departments/chemical-engineering/) at [TU Delft](https://www.tudelft.nl/en/). The main features of the MACE package are to discover all possible configurations for square-planar and octahedral metal complexes, and generate atomic 3D coordinates suitable for quantum-chemical computations. MACE shows high performance for complexes of ligands of high denticity (up to 6), and thus is well-suited for the development of a massive computational pipelines aimed at solving problems of homogeneous catalysis.
+
+If you use MACE in your work, please cite generously!
+
+I. Yu. Chernyshov, E. A. Pidko, MACE: Automated Assessment of Stereochemistry of Transition Metal Complexes and Its Applications in Computational Catalysis. *J. Chem. Theory Comput.* **2024**, *20*, 2313–2320, DOI: [10.1021/acs.jctc.3c01313](http://doi.org/10.1021/acs.jctc.3c01313).
 
 
 ## Installation
