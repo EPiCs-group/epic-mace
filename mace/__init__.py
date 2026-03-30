@@ -1,6 +1,5 @@
 '''This package contains classes and functions to discover possible stereomers
-and generate 3D atomic coordinates for mononuclear octahedral and square-planar
-metal complexes.
+and generate 3D atomic coordinates for mononuclear metal complexes.
 
 Concept
 -------
@@ -9,6 +8,10 @@ The :class:`mace.Complex` class contains all required functionality for stereome
 search and 3D embedding. The corresponding object can be initialized using the
 :class:`mace.Complex` constructor, or :func:`mace.ComplexFromMol`, :func:`mace.ComplexFromLigands`,
 and :func:`mace.ComplexFromXYZFile` functions.
+
+Built-in coordination geometries currently include octahedral (``OH``),
+square-planar (``SP``), tetrahedral (``TET``), square-pyramidal (``SPY``),
+trigonal-bipyramidal (``TBP``), and sandwich (``SAN``).
 
 An initialized complex object may not have defined stereochemestry of the central atom (non-empty
 :attr:`mace.Complex.err_init`). In this case, the :meth:`mace.Complex.GetStereomers` method

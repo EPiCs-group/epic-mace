@@ -1,0 +1,10 @@
+# output directory
+out_dir: ./
+# (Cl)(Cl)Pt(eta2-C2H4)(CO) test case - pi-complex
+name: Pt_Cl2_C2H4_CO
+geom: SP
+res-structs: 1
+complex: "[Pt](<-[Cl-:1])(<-[Cl-:2])(<-[*:3]([C:4]=[C:5])([H:6])([H:7])([H:8])([H:9]))<-[C-:10]#[O+]"
+regime: none
+num-confs: 1
+rms-thresh: 1.0

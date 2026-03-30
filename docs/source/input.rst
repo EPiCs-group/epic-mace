@@ -23,20 +23,30 @@ SMILES requirements
 SMILES of complex or ligands must satisfy the following conditions:
 
     1. Donor atoms have non-zero atom map numbers describing their spatial arrangement around a central atom:
-    
+
       .. image:: images/geoms_scheme.png
-    
+
       If one aims to generate all stereomers and is not interested in specifying the stereochemistry of the complex, when any non-zero map number can be used.
-    
+
     2. Non-**DA** atoms must have zero map numbers.
-    
+
     3. Bonds between central (**CA**) and donor (**DA**) atoms are dative, directed from **DA** to **CA**.
-    
+
     4. The complex contains one central atom only.
-    
+
     5. Substituents can be represented by dummy atoms with isotope number corresponding to the number of substituent (or R-groups for ChemAxon SMILES). Other atoms must have zero isotope numbers.
-    
+
     6. Substituents must be monovalent (*may change in the future*) and cannot be bound to the central atom.
+
+    7. **Haptic (η-type) and σ ligands** are encoded using a centroid dummy atom ``[*:N]`` (where ``N`` is the coordination position) attached to the coordinating atoms of the π-system. The dative bond goes from the centroid to the metal, and the hapticity η is determined automatically from the number of non-metal neighbours of the centroid. See :ref:`haptic link` for full details and examples.
+
+       Example — σ-H₂ at position 6 of an octahedral complex::
+
+           [W]([CO:1])([CO:2])([CO:3])([PH3:4])([PH3:5])<-[*:6]([H])[H]
+
+       Example — η²-ethylene at position 4 of a square-planar complex::
+
+           [Pt]([Cl:1])([Cl:2])([Cl:3])<-[*:4]([CH2])[CH2]
 
 
 ChemAxon Marvin

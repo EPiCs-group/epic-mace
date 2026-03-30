@@ -17,9 +17,9 @@ def ComplexFromMol(mol, geom, maxResonanceStructures = 1):
     
     Arguments:
         mol (Type[Chem.Mol]): molecule corresponding to the mononuclear
-            octahedral/square-planar metal complex;
-        geom (str): molecular geometry, "OH" for octahedral and "SP" for
-            square-planar;
+            supported mononuclear metal complex;
+        geom (str): molecular geometry identifier, e.g. "OH", "SP", "TET",
+            "SPY", "TBP", or "SAN";
         maxResonanceStructures (int): maximal number of resonance structures
                 to consider during generation of Complex._ID and Complex._eID
                 attributes.
@@ -47,8 +47,8 @@ def ComplexFromLigands(ligands, CA, geom, maxResonanceStructures = 1):
         ligands (List[str]): the list of ligands' SMILES, donor atoms must
             have non-zero atomic map numbers;
         CA (str): SMILES of the central atom;
-        geom (str): molecular geometry, "OH" for octahedral and "SP" for
-            square-planar;
+        geom (str): molecular geometry identifier, e.g. "OH", "SP", "TET",
+            "SPY", "TBP", or "SAN";
         maxResonanceStructures (int): maximal number of resonance structures
                 to consider during generation of Complex._ID and Complex._eID
                 attributes.

@@ -1,0 +1,27 @@
+# output directory
+out_dir: ./
+# Ni(eta3-C3H5)(H)(PMe3)2(CO)2 - octahedral Ni(II) with eta3-allyl, hydride, two PMe3 and two CO
+name: Ni_allyl_H_PMe3_2_CO_2
+geom: OH
+res-structs: 1
+# all donors carry :1 so MACE enumerates all distinct OH stereoisomers
+ligands:
+  - "[*:1]([CH2])([CH])[CH2]"
+  - "[H-:1]"
+  - "[P:1](C)(C)C"
+  - "[P:1](C)(C)C"
+  - "[C-:1]#[O+]"
+  - "[C-:1]#[O+]"
+CA: "[Ni+2]"
+# stereomer-search
+regime: CA
+get-enantiomers: false
+trans-cycle: no
+mer-rule: true
+# conformer-generation
+num-confs: 10
+rms-thresh: 0.5
+# conformer post-processing
+num-repr-confs: 1
+e-rel-max: 25.0
+drop-close-energy: true

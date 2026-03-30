@@ -4,9 +4,10 @@ and 3D embedding
 
 #%% Imports
 
-from itertools import combinations
+from itertools import combinations, permutations
 from copy import deepcopy
 from collections import namedtuple
+import numpy as np
 
 from rdkit.Geometry.rdGeometry import Point3D
 
@@ -44,6 +45,129 @@ params.Rcov = [0.23,0.23,1.5,1.28,0.96,0.83,0.68,0.68,0.68,0.64,1.5,1.66,1.41,1.
                1.45,1.46,1.48,1.4,1.21,1.5,2.6,2.21,2.15,2.06,2,1.96,1.9,1.87,1.8,1.69,1.54,
                1.83,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5]
 params.Rcov = {i: rcov for i, rcov in enumerate(params.Rcov)}
+
+
+def _point_to_array(point):
+    """Convert Point3D-like objects to NumPy arrays."""
+    return np.array([point.x, point.y, point.z], dtype=float)
+
+
+def _build_bounds(geom):
+    """Build a bounds matrix from idealized donor coordinates."""
+    labels = ['CA'] + [lab for lab in geom if lab != 'CA']
+    bounds = {lab1: {lab2: 0.0 for lab2 in labels} for lab1 in labels}
+    r = 2.0
+    dr = 0.1
+    scale_min = (r - dr) / r
+    scale_max = (r + dr) / r
+    arrays = {lab: _point_to_array(point) for lab, point in geom.items()}
+    for lab in labels:
+        if lab == 'CA':
+            continue
+        dist = np.linalg.norm(arrays[lab] - arrays['CA'])
+        bounds['CA'][lab] = dist + dr
+        bounds[lab]['CA'] = max(dist - dr, 0.1)
+    donors = [lab for lab in labels if lab != 'CA']
+    for lab1, lab2 in combinations(donors, r=2):
+        dist = np.linalg.norm(arrays[lab1] - arrays[lab2])
+        bounds[lab1][lab2] = dist * scale_max
+        bounds[lab2][lab1] = dist * scale_min
+
+    return bounds
+
+
+def _build_angles_and_nears(geom):
+    """Build central-atom angle and adjacency tables from idealized coordinates."""
+    arrays = {lab: _point_to_array(point) for lab, point in geom.items() if lab != 'CA'}
+    labels = [lab for lab in geom if lab != 'CA']
+    angles = {lab: {} for lab in labels}
+    nears = {lab: [] for lab in labels}
+    for lab1, lab2 in combinations(labels, r=2):
+        v1 = arrays[lab1]
+        v2 = arrays[lab2]
+        cos = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+        angle = float(np.degrees(np.arccos(np.clip(cos, -1.0, 1.0))))
+        angles[lab1][lab2] = angle
+        angles[lab2][lab1] = angle
+        if angle < 179.9:
+            nears[lab1].append(lab2)
+            nears[lab2].append(lab1)
+
+    return angles, nears
+
+
+def _get_symmetry_permutations(geom):
+    """Return proper and improper symmetry permutations for donor positions."""
+    labels = sorted(lab for lab in geom if str(lab).isdigit())
+    arrays = {lab: _point_to_array(geom[lab]) for lab in labels}
+    base = np.column_stack([arrays[lab] for lab in labels])
+    gram = base @ base.T
+    gram_inv = np.linalg.inv(gram)
+    proper, improper = [], []
+    for perm in permutations(labels):
+        trial = np.column_stack([arrays[lab] for lab in perm])
+        rot = trial @ base.T @ gram_inv
+        if not np.allclose(rot @ base, trial, atol=1e-6):
+            continue
+        if not np.allclose(rot.T @ rot, np.eye(3), atol=1e-6):
+            continue
+        if np.linalg.det(rot) > 0:
+            proper.append(perm)
+        else:
+            improper.append(perm)
+
+    return labels, proper, improper
+
+
+def _build_eq_ors(labels, perms):
+    """Convert symmetry permutations into EqOrs table format."""
+    return {
+        lab: [perm[idx] for perm in perms]
+        for idx, lab in enumerate(labels)
+    }
+
+
+def _build_syms(labels, proper_perms):
+    """Generate one representative of each arrangement orbit."""
+    rotations = [dict(zip(labels, perm)) for perm in proper_perms]
+    seen = set()
+    reps = []
+    for arrangement in permutations(labels):
+        if arrangement in seen:
+            continue
+        reps.append(arrangement)
+        for rotation in rotations:
+            rotation_inv = {val: key for key, val in rotation.items()}
+            rotated = tuple(arrangement[rotation_inv[lab] - 1] for lab in labels)
+            seen.add(rotated)
+
+    return {idx + 1: list(rep) for idx, rep in enumerate(reps)}
+
+
+def _volume(point1, point2, point3):
+    """Signed tetrahedral volume with the central atom placed at the origin."""
+    p1 = _point_to_array(point1)
+    p2 = _point_to_array(point2)
+    p3 = _point_to_array(point3)
+    return float(np.dot(p1, np.cross(p2, p3)) / 6.0)
+
+
+def _register_geometry(name, geom, posvs):
+    """Populate all parameter tables for a geometry from idealized coordinates."""
+    labels, proper, improper = _get_symmetry_permutations(geom)
+    params.Syms[name] = _build_syms(labels, proper)
+    params.Geoms[name] = geom
+    params.Bounds[name] = _build_bounds(geom)
+    params.PosVs[name] = [['CA', *face] for face in posvs]
+    ideal_volume = sum(
+        _volume(geom[a], geom[b], geom[c])
+        for a, b, c in posvs
+    )
+    params.MinVs[name] = ideal_volume / 8.0
+    params.EqOrs[name] = _build_eq_ors(labels, proper)
+    if improper:
+        params.EqOrs['enant' + name] = _build_eq_ors(labels, improper)
+    params.Angles[name], params.Nears[name] = _build_angles_and_nears(geom)
 
 
 # SMILES symmetry codes for octahedral geometry @OH1-@OH30
@@ -179,5 +303,90 @@ params.Angles = {'OH': {1: {2:  90.0, 3:  90.0, 4:  90.0, 5:  90.0, 6: 180.0},
                         3: {'X1':  90.0, 1: 180.0, 2:  90.0, 4:  90.0, 'X2':  90.0},
                         4: {'X1':  90.0, 1:  90.0, 2: 180.0, 3:  90.0, 'X2':  90.0},
                         'X2': {'X1': 180.0, 1:  90.0, 2:  90.0, 3:  90.0, 4:  90.0}}}
+
+
+# additional coordination polyhedra
+_register_geometry(
+    'TET',
+    {'CA': Point3D( 0.0,  0.0,  0.0),
+        1: Point3D( 1.154700538,  1.154700538,  1.154700538),
+        2: Point3D( 1.154700538, -1.154700538, -1.154700538),
+        3: Point3D(-1.154700538,  1.154700538, -1.154700538),
+        4: Point3D(-1.154700538, -1.154700538,  1.154700538)},
+    [(1, 2, 3),
+     (1, 4, 2),
+     (1, 3, 4),
+     (2, 4, 3)]
+)
+
+_register_geometry(
+    'SPY',
+    {'CA': Point3D( 0.0,  0.0,  0.0),
+        1: Point3D( 0.0,  0.0,  2.0),
+        2: Point3D( 2.0,  0.0,  0.0),
+        3: Point3D( 0.0,  2.0,  0.0),
+        4: Point3D(-2.0,  0.0,  0.0),
+        5: Point3D( 0.0, -2.0,  0.0)},
+    [(1, 2, 3),
+     (1, 3, 4),
+     (1, 4, 5),
+     (1, 5, 2)]
+)
+
+_register_geometry(
+    'TBP',
+    {'CA': Point3D( 0.0,  0.0,  0.0),
+        1: Point3D( 0.0,  0.0,  2.0),
+        2: Point3D( 2.0,  0.0,  0.0),
+        3: Point3D(-1.0,  1.732050808,  0.0),
+        4: Point3D(-1.0, -1.732050808,  0.0),
+        5: Point3D( 0.0,  0.0, -2.0)},
+    [(1, 2, 3),
+     (1, 3, 4),
+     (1, 4, 2),
+     (5, 3, 2),
+     (5, 4, 3),
+     (5, 2, 4)]
+)
+
+params.Syms['SAN'] = {1: [1, 2]}
+params.Geoms['SAN'] = {'CA': Point3D(0.0, 0.0, 0.0),
+                          1: Point3D(0.0, 0.0, 2.0),
+                          2: Point3D(0.0, 0.0,-2.0)}
+params.Bounds['SAN'] = _build_bounds(params.Geoms['SAN'])
+params.PosVs['SAN'] = []
+params.MinVs['SAN'] = -1.0
+params.EqOrs['SAN'] = {1: [1, 2],
+                       2: [2, 1]}
+params.Nears['SAN'] = {1: [],
+                       2: []}
+params.Angles['SAN'] = {1: {2: 180.0},
+                        2: {1: 180.0}}
+
+# M-to-centroid distances (Å) for haptic ligands, keyed by hapticity (number of
+# coordinating atoms). Used in _SetCentralAtomBonds when the donor atom is a
+# centroid dummy (* with a map number). These are geometry- and metal-independent
+# defaults; the actual distance varies with metal and oxidation state.
+#   η²: alkene/alkyne (Pd/Pt ~2.05 Å), σ-H₂ (W ~1.80 Å); approximate midpoint
+#   η⁵: Cp (Fe ~1.64 Å, Ru ~1.82 Å, W ~2.03 Å); approximate midpoint
+params.HapticDist = {
+    2: 1.85,   # η²  (σ-H₂, alkene, alkyne)
+    3: 2.00,   # η³  (allyl, open Cp)
+    4: 2.00,   # η⁴  (butadiene, 1,5-COD fragment)
+    5: 1.90,   # η⁵  (Cp, indenyl)
+    6: 1.75,   # η⁶  (benzene, arene)
+}
+
+# Centroid-to-haptic-atom distances (Å) used in _SetHapticConstraints.
+#   η²: approx half the ligand bond (H–H ≈ 0.41 Å, C=C ≈ 0.69 Å; midpoint used)
+#   η⁵: Cp ring radius  (C–C = 1.40 Å, regular pentagon: R = 0.851 × C–C ≈ 1.19 Å)
+#   η⁶: arene ring radius (C–C = 1.40 Å, regular hexagon:  R = C–C = 1.40 Å)
+params.HapticCentR = {
+    2: 0.55,   # η²
+    3: 1.20,   # η³
+    4: 1.15,   # η⁴
+    5: 1.21,   # η⁵
+    6: 1.40,   # η⁶
+}
 
 
