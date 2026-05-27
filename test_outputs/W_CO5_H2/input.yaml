@@ -1,0 +1,10 @@
+# output directory
+out_dir: W_CO5_H2
+# W(CO)5(eta2-H2) test case from test_haptic_ligands.py
+name: W_CO5_H2
+geom: OH
+res-structs: 1
+complex: "[W](<-[C-:2]#[O+])(<-[C-:3]#[O+])(<-[C-:4]#[O+])(<-[C-:5]#[O+])(<-[C-:6]#[O+])<-[*:1]([H])[H]"
+regime: none
+num-confs: 1
+rms-thresh: 1.0

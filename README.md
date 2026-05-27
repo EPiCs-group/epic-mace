@@ -58,14 +58,16 @@ Please note, that PyPI epic-mace package does not contain rdkit in the requireme
 
 2. Generation of 3D atomic coordinates, including instruments for conformer sampling.
 
-3. Modification of ligands with predefined substituents.
+3. Support for **haptic (η²–η⁶) and σ ligands**: Kubas-type σ-H₂, η²-alkene/alkyne, η³-allyl, η⁵-Cp, η⁶-arene and analogues, encoded via a centroid dummy atom in SMILES (see [documentation](https://epic-mace.readthedocs.io/en/latest/source/haptic_ligands.html)).
 
-4. Generation of geometry of coordinated ligands for [molSimplify](https://molsimplify.mit.edu/).
+4. Modification of ligands with predefined substituents.
 
-5. Two available interfaces:
-    
+5. Generation of geometry of coordinated ligands for [molSimplify](https://molsimplify.mit.edu/).
+
+6. Two available interfaces:
+
     - command-line interface for routine tasks;
-    
+
     - Python package for organizing complex computational pipelines.
 
 

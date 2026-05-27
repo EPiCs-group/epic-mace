@@ -1,5 +1,6 @@
 '''Contains Complex object which supports stereomer search and 3D embedding
-for mononuclear octahedral and square-planar metal complexes
+for mononuclear metal complexes with built-in OH, SP, TET, SPY, TBP, and SAN
+coordination geometries
 '''
 
 #%% Imports
@@ -32,8 +33,8 @@ class Complex():
     
     Arguments:
         smiles (str): RDKit/ChemAxon SMILES of the complex;
-        geom (str): molecular geometry, "OH" for octahedral and "SP" for
-            square-planar;
+        geom (str): molecular geometry identifier, e.g. "OH", "SP", "TET",
+            "SPY", "TBP", or "SAN";
         maxResonanceStructures (int): maximal number of resonance structures
             to consider during generation of Complex._ID and Complex._eID
             attributes.
@@ -109,13 +110,58 @@ class Complex():
     _EqOrs = params.EqOrs
     _Nears = params.Nears
     _Angles = params.Angles
+    _HapticDist = params.HapticDist
+    _HapticCentR = params.HapticCentR
     
     
 #%% Initialization
+
+    def _IsHapticRingCarbon(self, idx):
+        '''Checks whether a ring atom is compatible with Cp/arene hapticity.'''
+        atom = self.mol.GetAtomWithIdx(idx)
+        if atom.GetAtomicNum() != 6:
+            return False
+        if atom.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
+            return True
+        # The anchor carbon of Cp/Cp* may appear SP3 after adding the centroid
+        # bond in the molecular graph; allow that special case only.
+        return any(n.GetAtomicNum() == 0 for n in atom.GetNeighbors())
+
+    def _GetOrderedHapticRing(self, atom_idxs):
+        '''Returns ordered ring atoms if the haptic set matches a simple pi ring.'''
+        atom_set = set(atom_idxs)
+        if len(atom_set) not in (5, 6):
+            return None
+        for ring in self.mol.GetRingInfo().AtomRings():
+            if len(ring) != len(atom_set) or set(ring) != atom_set:
+                continue
+            if not all(self._IsHapticRingCarbon(idx) for idx in ring):
+                continue
+            return list(ring)
+
+        return None
+
+
+    def _ExpandAnchorToHapticRing(self, anchor_idx):
+        '''Expands one anchor atom to a Cp/arene-like pi ring when possible.'''
+        candidates = []
+        for ring in self.mol.GetRingInfo().AtomRings():
+            if anchor_idx not in ring or len(ring) not in (5, 6):
+                continue
+            if not all(self._IsHapticRingCarbon(idx) for idx in ring):
+                continue
+            aromatic_penalty = sum(not self.mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)
+            # Prefer Cp-like 5-membered rings first, then more aromatic candidates.
+            candidates.append((((len(ring) != 5), aromatic_penalty, len(ring)), list(ring)))
+        if not candidates:
+            return None
+
+        candidates.sort(key=lambda item: item[0])
+        return candidates[0][1]
     
     def _CheckMol(self):
-        '''Checks that self.mol falls under the definition of the mononuclear
-        square-planar or octahedral metal complex
+        '''Checks that self.mol falls under the definition of the supported
+        mononuclear metal complex
         '''
         # find and check dative bonds
         info = [(b.GetIdx(), b.GetBeginAtom(), b.GetEndAtom()) for b in self.mol.GetBonds() \
@@ -136,6 +182,26 @@ class Complex():
             raise ValueError('Bad SMILES: all hydrogens (hydrides) bonded to central atom must be encoded explicitly with isotopic label')
         # check donor atoms labelling
         self._DAs = {_[1].GetIdx(): _[1].GetAtomMapNum() for _ in info}
+        # identify centroid donor atoms: dummy atoms (* with map numbers) that
+        # represent haptic ligands (η²..η⁶). Map: centroid_idx -> [haptic_atom_idxs]
+        self._haptic_DAs = {}
+        self._haptic_ring_DAs = {}
+        self._haptic_anchor_DAs = {}
+        for idx in self._DAs:
+            atom = self.mol.GetAtomWithIdx(idx)
+            if atom.GetAtomicNum() == 0:
+                ns = [n.GetIdx() for n in atom.GetNeighbors()
+                      if n.GetIdx() != self._idx_CA]
+                ring_atoms = self._GetOrderedHapticRing(ns)
+                if ring_atoms is None and len(ns) == 1:
+                    ring_atoms = self._ExpandAnchorToHapticRing(ns[0])
+                if ring_atoms is not None:
+                    self._haptic_DAs[idx] = ring_atoms
+                    self._haptic_ring_DAs[idx] = ring_atoms
+                    if len(ns) == 1:
+                        self._haptic_anchor_DAs[idx] = ns[0]
+                else:
+                    self._haptic_DAs[idx] = ns
         labs = list(self._DAs.values())
         if len(labs) > len([_ for _ in self._Geoms[self.geom] if str(_).isdigit()]):
             raise ValueError('Bad SMILES: number of donor atoms exceeds maximal possible for given geometry')
@@ -149,8 +215,8 @@ class Complex():
         elif max(labs) > max([_ for _ in self._Geoms[self.geom] if str(_).isdigit()]):
             self.err_init = 'Bad SMILES: maximal isotopic label exceeds number of ligands'
             return
-    
-    
+
+
     def _SetComparison(self):
         '''Prepares _ID and _eID attributes required for their pairwise comparison'''
         mol_norm = deepcopy(self.mol)
@@ -607,6 +673,79 @@ class Complex():
             dmin = self._Bounds[self.geom][num2][num1]
             X[min(i,j)][max(i,j)] = max(dmin, dmax)
             X[max(i,j)][min(i,j)] = min(dmin, dmax)
+        # override bounds for haptic DAs:
+        # (a) CA↔centroid: HapticDist may be below the default r_min
+        # (b) CA↔haptic_atom: default 1,3 estimate is geometrically wrong for side-on ligation
+        for idx, haptic_idxs in self._haptic_DAs.items():
+            n_haptic = len(haptic_idxs)
+            d_c = self._HapticDist.get(n_haptic, 2.0)
+            r   = self._HapticCentR.get(n_haptic, 1.20)
+            # η²: distinguish σ-H₂ (both H) from η²-alkene (heavy atoms)
+            is_sigma_h2 = False
+            if n_haptic == 2:
+                anums = [self.mol3Dx.GetAtomWithIdx(h).GetAtomicNum()
+                         for h in haptic_idxs]
+                is_sigma_h2 = all(a == 1 for a in anums)
+                if not is_sigma_h2:
+                    r = 0.67  # half C=C bond (1.34 / 2)
+            dr  = 0.1
+            # CA-centroid
+            i, j = min(self._idx_CA, idx), max(self._idx_CA, idx)
+            X[i][j] = d_c + dr
+            X[j][i] = max(d_c - dr, 0.1)
+            # CA-haptic_atom: very loose bounds; FF constraints handle geometry
+            for h_idx in haptic_idxs:
+                i2, j2 = min(self._idx_CA, h_idx), max(self._idx_CA, h_idx)
+                X[i2][j2] = d_c + r + 0.5
+                X[j2][i2] = max(d_c - r - 0.5, 0.5)
+            if n_haptic == 2:
+                h1, h2 = haptic_idxs
+                i3, j3 = min(h1, h2), max(h1, h2)
+                if is_sigma_h2:
+                    # σ-H₂: H-H distance bounds
+                    X[i3][j3] = 0.90
+                    X[j3][i3] = 0.80
+                else:
+                    # η²-alkene: C=C distance bounds
+                    X[i3][j3] = 1.50
+                    X[j3][i3] = 1.20
+            elif n_haptic == 3:
+                # η³-allyl: C-C distance bounds.
+                # Identify central C (fewest H neighbours, e.g. CH) vs terminals (CH2).
+                h_ns = {h: sum(1 for nb in self.mol3Dx.GetAtomWithIdx(h).GetNeighbors()
+                               if nb.GetAtomicNum() == 1)
+                        for h in haptic_idxs}
+                central = min(h_ns, key=h_ns.get)
+                terminals = [h for h in haptic_idxs if h != central]
+                # adjacent C-C (central↔terminal): allyl delocalized ~1.35-1.45 Å
+                for t in terminals:
+                    i3, j3 = min(central, t), max(central, t)
+                    X[i3][j3] = 1.45
+                    X[j3][i3] = 1.35
+                # terminal↔terminal: ~2.40-2.60 Å
+                t1, t2 = terminals
+                i3, j3 = min(t1, t2), max(t1, t2)
+                X[i3][j3] = 2.60
+                X[j3][i3] = 2.40
+            elif idx in self._haptic_ring_DAs and n_haptic in (5, 6):
+                ordered_ring = self._haptic_ring_DAs[idx]
+                d_mc = (d_c**2 + r**2)**0.5
+                for h_idx in ordered_ring:
+                    i2, j2 = min(self._idx_CA, h_idx), max(self._idx_CA, h_idx)
+                    X[i2][j2] = d_mc + 0.30
+                    X[j2][i2] = max(d_mc - 0.30, 0.5)
+                ring_pos = {h_idx: i for i, h_idx in enumerate(ordered_ring)}
+                for i, h1 in enumerate(ordered_ring):
+                    for h2 in ordered_ring[i+1:]:
+                        step = abs(ring_pos[h1] - ring_pos[h2])
+                        step = min(step, n_haptic - step)
+                        target = 2 * r * np.sin(np.pi * step / n_haptic)
+                        tol = 0.08 if step == 1 else 0.12
+                        if n_haptic == 6 and step == 3:
+                            tol = 0.15
+                        i3, j3 = min(h1, h2), max(h1, h2)
+                        X[i3][j3] = target + tol
+                        X[j3][i3] = max(target - tol, 0.5)
         self._boundsMatrix = X
         # final
         self._embedding_prepared = True
@@ -631,8 +770,13 @@ class Complex():
     def _SetCentralAtomBonds(self):
         '''Sets MM parameters of X<-L bonds'''
         for idx in self._DAs:
-            dist = self._Rcov[self.mol3Dx.GetAtomWithIdx(self._idx_CA).GetAtomicNum()] + \
-                   self._Rcov[self.mol3Dx.GetAtomWithIdx(idx).GetAtomicNum()]
+            if idx in self._haptic_DAs:
+                # centroid atom: use tabulated M-centroid distance by hapticity
+                n_haptic = len(self._haptic_DAs[idx])
+                dist = self._HapticDist.get(n_haptic, 2.0)
+            else:
+                dist = self._Rcov[self.mol3Dx.GetAtomWithIdx(self._idx_CA).GetAtomicNum()] + \
+                       self._Rcov[self.mol3Dx.GetAtomWithIdx(idx).GetAtomicNum()]
             constraint = [idx, self._idx_CA, False, dist, dist, self._FFParams['kXL']]
             self._bond_params.append(constraint)
             self._ff.UFFAddDistanceConstraint(*constraint)
@@ -653,6 +797,8 @@ class Complex():
     def _SetDonorAtomsAngles(self):
         '''Sets MM parameters of X<-L-A angles'''
         for DA in self._DAs:
+            if DA in self._haptic_DAs:
+                continue  # haptic centroids: no hybridization-based angles
             # get neighbors
             ns = self.mol3Dx.GetAtomWithIdx(DA).GetNeighbors()
             ns = [n.GetIdx() for n in ns if n.GetIdx() != self._idx_CA]
@@ -676,6 +822,8 @@ class Complex():
     def _SetDonorAtomsParams(self):
         '''Sets MM parameters of DA-A bonds and A-DA-A angles'''
         for DA in self._DAs:
+            if DA in self._haptic_DAs:
+                continue  # haptic centroids: bonds/angles handled by _SetHapticConstraints
             # get neighbors
             ns = [_.GetIdx() for _ in self.mol3Dx.GetAtomWithIdx(DA).GetNeighbors()]
             ns = [_ for _ in ns if _ != self._idx_CA]
@@ -737,9 +885,204 @@ class Complex():
                 self._ff.UFFAddDistanceConstraint(*constraint)
     
     
+    def _SetHapticConstraints(self):
+        '''Sets MM distance constraints for haptic (η-type) ligands.
+        For each centroid DA, pins the centroid-to-haptic-atom distances using
+        the tabulated ring/bond radii from _HapticCentR.  For η² ligands,
+        element-specific constraints distinguish σ-H₂ (both haptic atoms H)
+        from η²-alkene (haptic atoms are heavy atoms such as C).  For η³-allyl,
+        C-C bond distances, M-C distances, and centroid-M-C=90° angle constraints
+        are added to place the allyl plane perpendicular to the M-centroid axis.
+        For η⁵/η⁶ Cp- and arene-like rings, cyclic ring distances together with
+        centroid-M-C=90° angle constraints keep the pi ring planar around the
+        centroid and perpendicular to the metal-centroid axis.
+        '''
+        for centroid_idx, haptic_idxs in self._haptic_DAs.items():
+            n = len(haptic_idxs)
+            # Determine centroid-haptic distance
+            d = self._HapticCentR.get(n, 1.20)
+            is_sigma_h2 = False
+            if n == 2:
+                anums = [self.mol3Dx.GetAtomWithIdx(h).GetAtomicNum()
+                         for h in haptic_idxs]
+                is_sigma_h2 = all(a == 1 for a in anums)
+                if not is_sigma_h2:
+                    d = 0.67  # half C=C bond (vs 0.55 compromise for σ-H₂)
+            # Centroid-haptic atom distances
+            for h_idx in haptic_idxs:
+                constraint = [centroid_idx, h_idx, False, d, d, self._FFParams['kLA']]
+                self._bond_params.append(constraint)
+                self._ff.UFFAddDistanceConstraint(*constraint)
+            if centroid_idx in self._haptic_ring_DAs and n in (5, 6):
+                ordered_ring = self._haptic_ring_DAs[centroid_idx]
+                ring_radius = self._HapticCentR.get(n, d)
+                d_mx = self._HapticDist.get(n, 2.0)
+                d_mc = (d_mx**2 + ring_radius**2)**0.5
+                ring_pos = {h_idx: i for i, h_idx in enumerate(ordered_ring)}
+                for i, h1 in enumerate(ordered_ring):
+                    for h2 in ordered_ring[i+1:]:
+                        step = abs(ring_pos[h1] - ring_pos[h2])
+                        step = min(step, n - step)
+                        target = 2 * ring_radius * np.sin(np.pi * step / n)
+                        tol = 0.08 if step == 1 else 0.12
+                        if n == 6 and step == 3:
+                            tol = 0.15
+                        constraint = [min(h1, h2), max(h1, h2), False,
+                                      max(target - tol, 0.5), target + tol,
+                                      self._FFParams['kLA']]
+                        self._bond_params.append(constraint)
+                        self._ff.UFFAddDistanceConstraint(*constraint)
+                for h_idx in ordered_ring:
+                    constraint = [self._idx_CA, h_idx, False,
+                                  max(d_mc - 0.30, 0.5), d_mc + 0.30,
+                                  self._FFParams['kLA']]
+                    self._bond_params.append(constraint)
+                    self._ff.UFFAddDistanceConstraint(*constraint)
+                    constraint = [centroid_idx, self._idx_CA, h_idx, False,
+                                  90, 90, self._FFParams['kALA']]
+                    self._angle_params.append(constraint)
+                    self._ff.UFFAddAngleConstraint(*constraint)
+                continue
+            if n == 2:
+                h1, h2 = haptic_idxs
+                if is_sigma_h2:
+                    # ── σ-H₂ constraints (unchanged) ──
+                    # H-H distance
+                    constraint = [h1, h2, False, 0.8, 0.9, self._FFParams['kLA']]
+                    self._bond_params.append(constraint)
+                    self._ff.UFFAddDistanceConstraint(*constraint)
+                    # M-H distances
+                    for h_idx in haptic_idxs:
+                        constraint = [self._idx_CA, h_idx, False, 1.5, 2.2, self._FFParams['kLA']]
+                        self._bond_params.append(constraint)
+                        self._ff.UFFAddDistanceConstraint(*constraint)
+                    # centroid-M-H angles
+                    for h_idx in haptic_idxs:
+                        constraint = [centroid_idx, self._idx_CA, h_idx, False, 90, 90, self._FFParams['kALA']]
+                        self._angle_params.append(constraint)
+                        self._ff.UFFAddAngleConstraint(*constraint)
+                else:
+                    # ── η²-alkene constraints ──
+                    # C=C distance (covers alkene ~1.34 and alkyne ~1.20)
+                    constraint = [h1, h2, False, 1.20, 1.50, self._FFParams['kLA']]
+                    self._bond_params.append(constraint)
+                    self._ff.UFFAddDistanceConstraint(*constraint)
+                    # M-C distances
+                    for h_idx in haptic_idxs:
+                        constraint = [self._idx_CA, h_idx, False, 2.0, 2.5, self._FFParams['kLA']]
+                        self._bond_params.append(constraint)
+                        self._ff.UFFAddDistanceConstraint(*constraint)
+                    # centroid-M-C angles
+                    for h_idx in haptic_idxs:
+                        constraint = [centroid_idx, self._idx_CA, h_idx, False, 90, 90, self._FFParams['kALA']]
+                        self._angle_params.append(constraint)
+                        self._ff.UFFAddAngleConstraint(*constraint)
+                    # Orientation: pin C=C perpendicular to coordination plane.
+                    # Both haptic C atoms must be equidistant from a cis donor;
+                    # this forces the C=C axis out of the coordination plane.
+                    centroid_num = self._DAs[centroid_idx]
+                    near_nums = self._Nears[self.geom][centroid_num]
+                    cis_da_idx = None
+                    for da_idx, da_num in self._DAs.items():
+                        if da_idx != centroid_idx and da_num in near_nums \
+                                and da_idx not in self._haptic_DAs:
+                            cis_da_idx = da_idx
+                            break
+                    if cis_da_idx is not None:
+                        # d_eq = sqrt(d_ML² + d_MX² + d_XC²) assuming all 90° angles
+                        d_MX = self._HapticDist.get(2, 1.85)
+                        d_XC = 0.67
+                        ca_anum = self.mol3Dx.GetAtomWithIdx(self._idx_CA).GetAtomicNum()
+                        cis_anum = self.mol3Dx.GetAtomWithIdx(cis_da_idx).GetAtomicNum()
+                        d_ML = self._Rcov[ca_anum] + self._Rcov[cis_anum]
+                        d_eq = (d_ML**2 + d_MX**2 + d_XC**2)**0.5
+                        tol = 0.3
+                        for h_idx in haptic_idxs:
+                            constraint = [cis_da_idx, h_idx, False,
+                                          d_eq - tol, d_eq + tol,
+                                          self._FFParams['kALA']]
+                            self._bond_params.append(constraint)
+                            self._ff.UFFAddDistanceConstraint(*constraint)
+                    # Push substituent H atoms away from metal to prevent
+                    # C-H...M agostic-like artifacts.  In a real pi-complex
+                    # the H atoms bend back (away from M).
+                    for c_idx in haptic_idxs:
+                        c_atom = self.mol3Dx.GetAtomWithIdx(c_idx)
+                        for nbr in c_atom.GetNeighbors():
+                            if nbr.GetAtomicNum() == 1:
+                                constraint = [self._idx_CA, nbr.GetIdx(), False,
+                                              2.5, 5.0, self._FFParams['kLA']]
+                                self._bond_params.append(constraint)
+                                self._ff.UFFAddDistanceConstraint(*constraint)
+            elif n == 3:
+                # ── η³-allyl constraints ──
+                # Identify central C (fewest H neighbours, CH) vs terminals (CH2).
+                h_ns = {h: sum(1 for nb in self.mol3Dx.GetAtomWithIdx(h).GetNeighbors()
+                               if nb.GetAtomicNum() == 1)
+                        for h in haptic_idxs}
+                central_idx = min(h_ns, key=h_ns.get)
+                terminal_idxs = [h for h in haptic_idxs if h != central_idx]
+                t1, t2 = terminal_idxs
+                # C-C bond distances: central↔terminal (~1.35-1.45 Å, delocalized)
+                for t_idx in terminal_idxs:
+                    constraint = [min(central_idx, t_idx), max(central_idx, t_idx),
+                                  False, 1.35, 1.45, self._FFParams['kLA']]
+                    self._bond_params.append(constraint)
+                    self._ff.UFFAddDistanceConstraint(*constraint)
+                # terminal↔terminal distance (~2.40-2.60 Å)
+                constraint = [min(t1, t2), max(t1, t2),
+                              False, 2.40, 2.60, self._FFParams['kLA']]
+                self._bond_params.append(constraint)
+                self._ff.UFFAddDistanceConstraint(*constraint)
+                # M-C distances
+                for h_idx in haptic_idxs:
+                    constraint = [self._idx_CA, h_idx, False, 2.0, 2.5, self._FFParams['kLA']]
+                    self._bond_params.append(constraint)
+                    self._ff.UFFAddDistanceConstraint(*constraint)
+                # centroid-M-C angles = 90°: places allyl plane perpendicular to M-centroid axis
+                for h_idx in haptic_idxs:
+                    constraint = [centroid_idx, self._idx_CA, h_idx,
+                                  False, 90, 90, self._FFParams['kALA']]
+                    self._angle_params.append(constraint)
+                    self._ff.UFFAddAngleConstraint(*constraint)
+                # Orientation: allyl plane perpendicular to coordination plane.
+                # All three C atoms equidistant from a cis sigma-donor.
+                centroid_num = self._DAs[centroid_idx]
+                near_nums = self._Nears[self.geom][centroid_num]
+                cis_da_idx = None
+                for da_idx, da_num in self._DAs.items():
+                    if da_idx != centroid_idx and da_num in near_nums \
+                            and da_idx not in self._haptic_DAs:
+                        cis_da_idx = da_idx
+                        break
+                if cis_da_idx is not None:
+                    d_MX = self._HapticDist.get(3, 2.00)
+                    d_XC = self._HapticCentR.get(3, 1.20)
+                    ca_anum  = self.mol3Dx.GetAtomWithIdx(self._idx_CA).GetAtomicNum()
+                    cis_anum = self.mol3Dx.GetAtomWithIdx(cis_da_idx).GetAtomicNum()
+                    d_ML = self._Rcov[ca_anum] + self._Rcov[cis_anum]
+                    d_eq = (d_ML**2 + d_MX**2 + d_XC**2)**0.5
+                    tol = 0.4
+                    for h_idx in haptic_idxs:
+                        constraint = [cis_da_idx, h_idx, False,
+                                      d_eq - tol, d_eq + tol,
+                                      self._FFParams['kALA']]
+                        self._bond_params.append(constraint)
+                        self._ff.UFFAddDistanceConstraint(*constraint)
+                # Push substituent H atoms away from metal
+                for c_idx in haptic_idxs:
+                    c_atom = self.mol3Dx.GetAtomWithIdx(c_idx)
+                    for nbr in c_atom.GetNeighbors():
+                        if nbr.GetAtomicNum() == 1:
+                            constraint = [self._idx_CA, nbr.GetIdx(), False,
+                                          2.5, 5.0, self._FFParams['kLA']]
+                            self._bond_params.append(constraint)
+                            self._ff.UFFAddDistanceConstraint(*constraint)
+
+
     def _SetForceField(self, confId):
         '''Sets MM force field for the given conformer
-        
+
         Arguments:
             confId (int): index of the conformer
         '''
@@ -758,6 +1101,7 @@ class Complex():
         self._SetCentralAtomBonds()
         self._SetDonorAtomsAngles()
         self._SetDonorAtomsParams()
+        self._SetHapticConstraints()
         self._SetDummiesBonds()
         self._ff_prepared = True
     
@@ -1300,6 +1644,62 @@ class Complex():
     
     
 #%% Output
+
+    def _GetOutputCpHydrogens(self, confId):
+        '''Returns missing Cp-anchor H atoms to append in XYZ output.'''
+        if not getattr(self, '_haptic_anchor_DAs', None):
+            return []
+        conf = self.mol3Dx.GetConformer(confId)
+        out = []
+        for centroid_idx, anchor_idx in self._haptic_anchor_DAs.items():
+            ring = self._haptic_ring_DAs.get(centroid_idx, [])
+            anchor = self.mol.GetAtomWithIdx(anchor_idx)
+            if len(ring) != 5 or anchor.GetFormalCharge() != -1:
+                continue
+            extra_subs = [
+                nbr.GetIdx() for nbr in anchor.GetNeighbors()
+                if nbr.GetIdx() not in ring and nbr.GetIdx() != centroid_idx and nbr.GetAtomicNum() != 1
+            ]
+            if extra_subs:
+                continue
+            pos_in_ring = ring.index(anchor_idx)
+            n1 = ring[(pos_in_ring - 1) % len(ring)]
+            n2 = ring[(pos_in_ring + 1) % len(ring)]
+            p0 = np.array(conf.GetAtomPosition(anchor_idx))
+            p1 = np.array(conf.GetAtomPosition(n1))
+            p2 = np.array(conf.GetAtomPosition(n2))
+            v1 = p1 - p0
+            v2 = p2 - p0
+            v1 /= np.linalg.norm(v1)
+            v2 /= np.linalg.norm(v2)
+            direction = -(v1 + v2)
+            if np.linalg.norm(direction) < 1e-8:
+                continue
+            direction /= np.linalg.norm(direction)
+            out.append({
+                'anchor_idx': anchor_idx,
+                'position': p0 + 1.08 * direction,
+            })
+
+        return out
+
+
+    def _AddOutputCpHydrogens(self, mol, additions):
+        '''Adds missing Cp-anchor H atoms to a temporary output molecule copy.'''
+        if not additions:
+            return mol
+        mol = deepcopy(mol)
+        Chem.Kekulize(mol, clearAromaticFlags = True)
+        ed = Chem.EditableMol(mol)
+        for add in additions:
+            anchor = mol.GetAtomWithIdx(add['anchor_idx'])
+            anchor.SetFormalCharge(0)
+            idx_h = ed.AddAtom(Chem.Atom(1))
+            ed.AddBond(add['anchor_idx'], idx_h, Chem.BondType.SINGLE)
+        mol = ed.GetMol()
+        mol.UpdatePropertyCache(strict = False)
+
+        return mol
     
     def _ConfToXYZ(self, confId):
         '''Generates text block of the XYZ file
@@ -1310,6 +1710,9 @@ class Complex():
         Returns:
             str: text block of the XYZ file
         '''
+        additions = self._GetOutputCpHydrogens(confId)
+        mol3D = self._AddOutputCpHydrogens(self.mol3D, additions)
+        mol3Dx = self._AddOutputCpHydrogens(self.mol3Dx, additions)
         # coordinates
         xyz = []
         conf = self.mol3Dx.GetConformer(confId) # not mol3D as it uses in AlignMol
@@ -1320,6 +1723,9 @@ class Complex():
             pos = conf.GetAtomPosition(atom.GetIdx())
             line = f'{symbol:2} {pos.x:>-10.4f} {pos.y:>-10.4f} {pos.z:>-10.4f}'
             xyz.append(line)
+        for add in additions:
+            p = add['position']
+            xyz.append(f'H  {p[0]:>-10.4f} {p[1]:>-10.4f} {p[2]:>-10.4f}')
         # conf params
         E = conf.GetDoubleProp('E')
         rms = conf.GetDoubleProp('EmbedRMS')
@@ -1329,22 +1735,17 @@ class Complex():
             atom.SetAtomMapNum(atom.GetIdx())
         smiles = Chem.MolToSmiles(mol, canonical = False)
         # mol3D smiles
-        mol3D = deepcopy(self.mol3D)
         for atom in mol3D.GetAtoms():
             atom.SetAtomMapNum(atom.GetIdx())
         smiles3D = Chem.MolToSmiles(mol3D, canonical = False)
         # mol3Dx smiles
-        mol3Dx = deepcopy(self.mol3Dx)
         for atom in mol3Dx.GetAtoms():
             atom.SetAtomMapNum(atom.GetIdx())
         smiles3Dx = Chem.MolToSmiles(mol3Dx, canonical = False)
         # dummies' coords
         dummies = []
-        conf3Dx = mol3Dx.GetConformer(confId)
-        for i in range(mol3D.GetNumAtoms(), mol3Dx.GetNumAtoms()):
-            if i < mol3D.GetNumAtoms():
-                continue
-            p = conf3Dx.GetAtomPosition(i)
+        for i in range(self.mol3D.GetNumAtoms(), self.mol3Dx.GetNumAtoms()):
+            p = conf.GetAtomPosition(i)
             dummies += [p.x, p.y, p.z]
         # make text
         info = {'conf': confId, 'E': float(f'{E:.2f}'),

@@ -10,10 +10,11 @@ Welcome to epic-mace's documentation!
    :hidden:
    :maxdepth: 2
    :caption: Before you start
-   
+
    source/when_to_use
    source/installation
    source/input
+   source/haptic_ligands
    source/view_structures
 
 
@@ -47,9 +48,10 @@ Main features
 
 1. Stereomer search for octahedral and square-planar complexes.
 2. Generation of 3D atomic coordinates, including instruments for conformer sampling.
-3. Modification of ligands with predefined substituents.
-4. Generation of geometry of coordinated ligands for `molSimplify`_.
-5. Two available interfaces:
+3. Support for haptic (η²–η⁶) and σ ligands (Kubas-type H₂, alkene, Cp, arene, etc.).
+4. Modification of ligands with predefined substituents.
+5. Generation of geometry of coordinated ligands for `molSimplify`_.
+6. Two available interfaces:
 
     - command-line interface for routine tasks;
     - Python package for organizing complex computational pipelines.

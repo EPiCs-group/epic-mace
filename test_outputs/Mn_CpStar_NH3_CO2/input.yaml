@@ -1,0 +1,25 @@
+# output directory
+out_dir: ./test_outputs/Mn_CpStar_NH3_CO2_TET
+# CpStar(Mn)(NH3)(CO)2 - piano-stool Mn(I) half-sandwich, all donors :1
+name: Mn_CpStar_NH3_CO2
+geom: TET
+res-structs: 1
+# all donors carry :1 so MACE enumerates all distinct TET stereoisomers
+ligands:
+  - "[*:1]c1(C)c(C)c(C)c(C)c1C"
+  - "[NH3:1]"
+  - "[C-:1]#[O+]"
+  - "[C-:1]#[O+]"
+CA: "[Mn]"
+# stereomer-search
+regime: CA
+get-enantiomers: false
+trans-cycle: no
+mer-rule: true
+# conformer-generation
+num-confs: 10
+rms-thresh: 0.5
+# conformer post-processing
+num-repr-confs: 1
+e-rel-max: 25.0
+drop-close-energy: true

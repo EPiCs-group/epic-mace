@@ -1,0 +1,10 @@
+# output directory
+out_dir: ./
+# (eta5-Cp)Mn(CO)3 test case from test_haptic_ligands.py
+name: Mn_Cp_CO3
+geom: OH
+res-structs: 1
+complex: "[Mn+](<-[C-:2]#[O+])(<-[C-:3]#[O+])(<-[C-:4]#[O+])<-[*:1][C-]1C=CC=C1"
+regime: none
+num-confs: 1
+rms-thresh: 1.0

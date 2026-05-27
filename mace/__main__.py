@@ -24,7 +24,8 @@ def get_parser():
         prog = 'epic-mace',
         description = f'epic-mace v. {mace.__version__}. '
                        'CLI tool for stereomer search and 3D coordinates generation of '
-                       'octahedral and square-planar metal complexes. '
+                       'mononuclear metal complexes with built-in OH, SP, TET, '
+                       'SPY, TBP, and SAN coordination geometries. '
                        'For more details see https://epic-mace.readthedocs.io/en/latest/',
         epilog = '  --R1, --R2, etc.      lists of substituent names. If substituent name '
                  'is not described in substituents file, SMILES must be provided (sub="SMILES"). '
@@ -53,10 +54,14 @@ def get_parser():
         help = 'name of the complex; required if --input is not specified'
     )
     struct.add_argument(
-        '--geom', type = str, choices = ['OH', 'SP'],
+        '--geom', type = str, choices = ['OH', 'SP', 'TET', 'SPY', 'TBP', 'SAN'],
         help = 'molecular geometry of the central atom:\n'
                '  - OH: octahedral\n'
-               '  - SP: square-planar'
+               '  - SP: square-planar\n'
+               '  - TET: tetrahedral\n'
+               '  - SPY: square-pyramidal\n'
+               '  - TBP: trigonal-bipyramidal\n'
+               '  - SAN: sandwich (two-opposed haptic centroids)\n'
                'required if --input is not specified'
     )
     struct.add_argument(

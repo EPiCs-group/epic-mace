@@ -1,0 +1,23 @@
+# output directory
+out_dir: ./test_outputs/Fe_Cp_2
+# ferrocene Fe(Cp)2 - sandwich complex with two opposed eta5 Cp centroids
+name: Fe_Cp_2
+geom: SAN
+res-structs: 1
+# both centroids carry :1 so MACE enumerates distinct SAN stereomers
+ligands:
+  - "[*:1][C-]1C=CC=C1"
+  - "[*:1][C-]1C=CC=C1"
+CA: "[Fe+2]"
+# stereomer-search
+regime: CA
+get-enantiomers: false
+trans-cycle: no
+mer-rule: false
+# conformer-generation
+num-confs: 10
+rms-thresh: 0.5
+# conformer post-processing
+num-repr-confs: 1
+e-rel-max: 25.0
+drop-close-energy: true

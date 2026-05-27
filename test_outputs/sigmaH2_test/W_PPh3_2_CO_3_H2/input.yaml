@@ -1,0 +1,26 @@
+# output directory
+out_dir: ./
+# structure
+name: W_PPh3_2_CO_3_H2
+geom: OH
+res-structs: 1
+ligands:
+  - "[P:1](c1ccccc1)(c1ccccc1)(c1ccccc1)"
+  - "[P:2](c1ccccc1)(c1ccccc1)(c1ccccc1)"
+  - "[C-:3]#[O+]"
+  - "[C-:4]#[O+]"
+  - "[C-:5]#[O+]"
+  - "[*:6]([H])[H]"
+CA: "[W]"
+# stereomer-search
+regime: none
+get-enantiomers: true
+trans-cycle: no
+mer-rule: true
+# conformer-generation
+num-confs: 50
+rms-thresh: 0.5
+# conformer post-processing
+num-repr-confs: 3
+e-rel-max: 25.0
+drop-close-energy: true

@@ -1,6 +1,26 @@
 Changelog
 =========
 
+0.6.0
+-----
+
+  - Support for **haptic (η-type) and σ ligands** via centroid dummy atoms.
+    η²–η⁶ pi-complexes (alkene, alkyne, allyl, Cp, arene) and σ-H₂ (Kubas-type)
+    complexes can now be embedded in ``OH`` and ``SP`` geometries. Encoding uses
+    a ``[*:N]`` centroid atom in SMILES; stereomer generation and conformer
+    sampling are unchanged. See :ref:`haptic link` for details.
+
+    New parameters in :mod:`mace._parameters`:
+
+    - ``HapticDist`` — tabulated M–centroid distances (Å) by hapticity η;
+    - ``HapticCentR`` — centroid–haptic-atom distances (Å) by hapticity η.
+
+    New internal method in :class:`mace.Complex`:
+
+    - :meth:`_SetHapticConstraints` — adds centroid–ring-atom distance constraints
+      to the MM force field for every haptic donor atom.
+
+
 0.5.0
 -----
 
