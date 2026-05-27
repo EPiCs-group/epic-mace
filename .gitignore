@@ -1,6 +1,10 @@
 # package testing
 untitled0.py
 
+# generated output directories (from run_sigma_pi_complexes.py and similar)
+sigma_pi_output/
+*_output/
+
 # CLI testing
 mace_input.yaml
 substituents.yaml
